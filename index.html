@@ -4,153 +4,154 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>정연지오빌1 관리비 정산</title>
+<title>정연지오빌1 관리비 장부</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
 <style>
-/* 장부형 업무 화면: 남색 상단 띠 + 탭 + 노란 입력칸 표. 숫자는 오른쪽 정렬 고정폭 */
+/* 어르신용 장부: 큰 글씨, 큰 버튼, 한 화면에 한 가지 일 */
 :root{
-  --bg:#f3f5f8;--surface:#ffffff;--surface2:#f6f8fb;--line:#dbe1e9;--fg:#1c2632;--muted:#667383;
-  --navy:#17365d;--navy2:#21477a;--navyfg:#ffffff;--input:#fff8dc;--inputline:#e6d690;--focus:#3b78c4;
-  --red:#b42424;--redbg:#fbeaea;--amber:#8a5a00;--amberbg:#fff4d6;--green:#1b7a3d;--greenbg:#e6f5ec;--blue:#1d4f91;--bluebg:#e8f0fb;--bar:#3b78c4;
+  --bg:#f2f4f7;--surface:#ffffff;--surface2:#f5f7fa;--line:#cfd7e1;--fg:#141c26;--muted:#4f5b69;
+  --navy:#17365d;--navy2:#24497a;--navyfg:#ffffff;--input:#fff6d6;--inputline:#d9c26a;--focus:#1f6fd1;
+  --red:#b3261e;--redbg:#fdeceb;--amber:#7a4f00;--amberbg:#fff1cc;--green:#16703a;--greenbg:#e3f4ea;--blue:#174a8b;--bluebg:#e6effb;--bar:#2f6fbf;
   --font:"IBM Plex Sans KR","Malgun Gothic","맑은 고딕","Apple SD Gothic Neo",system-ui,sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#11161d;--surface:#18202a;--surface2:#1e2833;--line:#2c3846;--fg:#e4e9ef;--muted:#93a0af;
-  --navy:#0f2540;--navy2:#1b3a62;--navyfg:#ffffff;--input:#2c2914;--inputline:#5b5223;--focus:#6fa5e8;
-  --red:#ff8a80;--redbg:#3a1d1d;--amber:#f2c35b;--amberbg:#382c12;--green:#7fd39c;--greenbg:#173326;--blue:#9cc3f5;--bluebg:#1a2b42;--bar:#6fa5e8;color-scheme:dark}}
+  --bg:#10151c;--surface:#19212b;--surface2:#202a36;--line:#34404e;--fg:#eef2f6;--muted:#aab5c2;
+  --navy:#10284a;--navy2:#1c3c66;--navyfg:#ffffff;--input:#2e2a14;--inputline:#6a5d26;--focus:#7fb2ef;
+  --red:#ff9a90;--redbg:#3b1f1f;--amber:#f5c860;--amberbg:#3a2e12;--green:#86dba5;--greenbg:#173527;--blue:#a6c9f7;--bluebg:#1b2d45;--bar:#7fb2ef;color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#11161d;--surface:#18202a;--surface2:#1e2833;--line:#2c3846;--fg:#e4e9ef;--muted:#93a0af;
-  --navy:#0f2540;--navy2:#1b3a62;--navyfg:#ffffff;--input:#2c2914;--inputline:#5b5223;--focus:#6fa5e8;
-  --red:#ff8a80;--redbg:#3a1d1d;--amber:#f2c35b;--amberbg:#382c12;--green:#7fd39c;--greenbg:#173326;--blue:#9cc3f5;--bluebg:#1a2b42;--bar:#6fa5e8;color-scheme:dark}
+  --bg:#10151c;--surface:#19212b;--surface2:#202a36;--line:#34404e;--fg:#eef2f6;--muted:#aab5c2;
+  --navy:#10284a;--navy2:#1c3c66;--navyfg:#ffffff;--input:#2e2a14;--inputline:#6a5d26;--focus:#7fb2ef;
+  --red:#ff9a90;--redbg:#3b1f1f;--amber:#f5c860;--amberbg:#3a2e12;--green:#86dba5;--greenbg:#173527;--blue:#a6c9f7;--bluebg:#1b2d45;--bar:#7fb2ef;color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px}
-header{background:var(--navy);color:var(--navyfg);display:flex;align-items:center;gap:8px 10px;padding:10px 16px;flex-wrap:wrap;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
-header h1{font-size:17px;margin:0 10px 0 0;text-wrap:balance}
-header select,header button{font:inherit;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.25);background:var(--navy2);color:var(--navyfg);cursor:pointer}
-header .sp{flex:1}
-.sync{font-size:12px;opacity:.85}
-nav{background:var(--surface);border-bottom:1px solid var(--line);display:flex;gap:2px;padding:0 10px;overflow-x:auto}
-nav button{border:0;background:none;padding:12px 12px;font:inherit;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
-nav button.on{color:var(--fg);font-weight:700;border-bottom-color:var(--focus)}
-nav .badge{display:inline-block;background:var(--red);color:var(--surface);border-radius:9px;font-size:11px;padding:0 6px;margin-left:4px}
-main{max-width:1240px;margin:0 auto;padding-block:16px;padding-inline:16px}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
-.card .k{font-size:12px;color:var(--muted);letter-spacing:.02em}.card .v{font-size:19px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:14px;min-width:0}
-.panel h2{font-size:16px;margin:0 0 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.panel h2 small{font-weight:400;color:var(--muted);font-size:12px}
-.msg{padding:9px 12px;border-radius:6px;margin:6px 0;display:flex;gap:12px}
-.msg b{min-width:34px;flex:none}
+html{font-size:18px}
+body{margin:0;overflow-x:clip;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:1rem;line-height:1.55}
+button,input,select,textarea{font:inherit}
+.top{background:var(--navy);color:var(--navyfg);padding:12px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.top h1{font-size:1.15rem;margin:0;flex:1;min-width:0}
+.top .sync{font-size:.8rem;opacity:.9}
+.monthbar{display:flex;align-items:center;gap:8px;background:var(--surface);border-bottom:1px solid var(--line);padding:10px 16px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.monthbar .m{flex:1;text-align:center;font-size:1.25rem;font-weight:700}
+.monthbar .m small{display:block;font-size:.75rem;font-weight:400;color:var(--muted)}
+.arrow{min-width:52px;min-height:52px;border-radius:10px;border:1px solid var(--line);background:var(--surface2);color:var(--fg);font-size:1.3rem;cursor:pointer}
+.arrow[disabled]{opacity:.3}
+main{max-width:760px;margin:0 auto;padding:16px 16px 60px}
+main.wide{max-width:1100px}
+.back{display:inline-flex;align-items:center;gap:6px;min-height:48px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-size:1rem;cursor:pointer;margin-bottom:12px}
+h2.title{font-size:1.4rem;margin:4px 0 4px}
+p.lead{color:var(--muted);margin:0 0 14px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;min-width:0}
+.panel h3{font-size:1.15rem;margin:0 0 10px}
+.money{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+@media(max-width:480px){.money .v{font-size:min(1.15rem,4.8vw)}.money .c{padding:12px}.money .c.big .v{font-size:1.8rem}.todo .t span{font-size:.85rem}}
+.money .c{min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.money .k{font-size:.9rem;color:var(--muted)}
+.money .v{white-space:nowrap;font-size:1.6rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.3}
+.money .c.wide{grid-column:1/-1}
+.money .c.big{grid-column:1/-1;background:var(--navy);color:var(--navyfg);border-color:var(--navy)}
+.money .c.big .k{color:var(--navyfg);opacity:.85}.money .c.big .v{font-size:2rem}
+.todo{display:grid;gap:12px;margin-bottom:16px}
+.todo button{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:16px;border-radius:14px;border:2px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;min-height:84px}
+.todo button:hover,.todo button:focus-visible{border-color:var(--focus);outline:none}
+.todo .n{flex:none;width:46px;height:46px;border-radius:50%;background:var(--navy);color:var(--navyfg);display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:700}
+.todo .t{flex:1;min-width:0}.todo .t b{display:block;font-size:1.2rem}.todo .t span{color:var(--muted);font-size:.95rem}
+.todo .st{flex:none;font-size:.9rem;font-weight:700;padding:6px 10px;border-radius:999px}
+.st.done{background:var(--greenbg);color:var(--green)}.st.todo2{background:var(--amberbg);color:var(--amber)}.st.lock{background:var(--bluebg);color:var(--blue)}
+.more{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.more button{min-height:64px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-size:1rem;cursor:pointer;padding:8px}
+.alert{padding:12px 14px;border-radius:10px;margin:8px 0;display:flex;gap:10px;font-size:1rem}
+.alert b{flex:none}
 .err{background:var(--redbg);color:var(--red)}.warn{background:var(--amberbg);color:var(--amber)}.ok{background:var(--greenbg);color:var(--green)}.info{background:var(--bluebg);color:var(--blue)}
-table{border-collapse:collapse;width:100%}
-th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;white-space:nowrap}
-th{background:var(--surface2);font-weight:600;font-size:13px;position:sticky;top:0;z-index:1}
-td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
-tr.sub td{background:var(--surface2);font-weight:600}
-tr.tot td{background:var(--surface2);font-weight:700}
-.wrap{overflow:auto;max-height:70vh;border:1px solid var(--line);border-radius:6px}
-input.c{font:inherit;color:var(--fg);width:100%;min-width:70px;padding:4px 6px;border:1px solid transparent;border-radius:4px;background:var(--input);font-variant-numeric:tabular-nums}
-input.c:hover{border-color:var(--inputline)}input.c:focus{outline:2px solid var(--focus);background:var(--surface)}
-input.c.num{text-align:right}
-input.c[readonly]{background:transparent;border-color:transparent;outline:none}
-.btn{font:inherit;color:var(--fg);padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface);cursor:pointer}
-.btn:focus-visible,nav button:focus-visible,header button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
-.btn.p{background:var(--navy);border-color:var(--navy);color:var(--navyfg)}
-.btn.d{color:var(--red)}
-.btn.s{padding:2px 8px;font-size:12px}
-.btn[disabled]{opacity:.5;cursor:default}
-.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
-.muted{color:var(--muted)}.red{color:var(--red)}.green{color:var(--green)}.amber{color:var(--amber)}
-.pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px}
-.lock{background:var(--amberbg);color:var(--amber);padding:8px 12px;border-radius:6px;margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media(max-width:860px){.grid2{grid-template-columns:1fr}}
-.calc td{padding:8px}.calc td:first-child{color:var(--muted)}
-#toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:8px;z-index:20;max-width:90vw}
-textarea{font:inherit;color:var(--fg);background:var(--surface);width:100%;min-height:70px;padding:8px;border:1px solid var(--line);border-radius:6px}
-select.c{font:inherit;color:var(--fg);background:var(--input);border:1px solid var(--inputline);border-radius:4px;padding:3px 4px}
-#quick{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;z-index:25;padding:0}
-#quick .qbox{background:var(--surface);color:var(--fg);width:100%;max-width:480px;border-radius:14px 14px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));display:grid;gap:12px}
-#quick .qtop{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:13px}
-#quick .qroom{font-size:22px}#quick .qroom b{font-size:30px;margin-right:8px}
-#quick label{min-width:0;display:grid;gap:4px;font-size:14px;color:var(--muted)}
-#quick input{width:100%;min-width:0;font:inherit;font-size:26px;padding:10px 12px;border:2px solid var(--inputline);border-radius:8px;background:var(--input);color:var(--fg);text-align:right;font-variant-numeric:tabular-nums}
-#quick .row{display:grid;grid-template-columns:1fr 2fr;gap:8px}#quick .row .btn{padding:12px;font-size:16px}
-.closed{background:var(--greenbg);color:var(--green);padding:8px 12px;border-radius:6px;margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.log{border-bottom:1px solid var(--line);padding:8px 0}.log .h{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:13px}.log ul{margin:4px 0 0;padding-left:18px;font-size:13px;color:var(--muted)}
-.neg{color:var(--blue)}
-header .s{display:none}
-@media(max-width:600px){
- header{position:static;padding:8px 12px;gap:6px}
- header h1{font-size:14px;margin:0;flex:1}
- header .sp,#who,#logout,header .l{display:none}
- header .s{display:inline}
- header label{flex:1 1 100%;display:flex;align-items:center;gap:6px;font-size:13px;order:3}
- header label select{flex:1}
- #newMonth,#exportX,#undo{order:4;flex:1;padding:6px 4px;font-size:13px}
- .sync{order:2;font-size:11px}
- nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;padding:0 4px}
- nav button{padding:10px 9px;font-size:13px}
- main{padding-inline:10px}
- .wrap{max-height:none}
-th,td{padding:5px 6px}input.c{min-width:60px}.hide-m{display:none}}
-#modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:30;padding:16px}
-#modal .box{background:var(--surface);color:var(--fg);border-radius:10px;padding:20px;max-width:440px;width:100%;white-space:pre-line}
-#modal .row{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
-.empty{text-align:center;padding:60px 16px;color:var(--muted)}
+.btn{min-height:52px;padding:0 18px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-size:1rem;cursor:pointer}
+.btn.p{background:var(--navy);border-color:var(--navy);color:var(--navyfg);font-weight:700}
+.btn.d{color:var(--red);border-color:var(--red)}
+.btn.s{min-height:40px;padding:0 12px;font-size:.9rem}
+.btn.full{width:100%}
+.btn[disabled]{opacity:.45;cursor:default}
+.btn:focus-visible,.back:focus-visible,.arrow:focus-visible,.more button:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.list{display:grid;gap:8px}
+.item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--fg);cursor:pointer;min-height:64px;font-size:1rem}
+.item:hover{border-color:var(--focus)}
+.item .r{flex:none;min-width:60px;font-size:1.25rem;font-weight:700}
+.item .mid{flex:1;min-width:0}.item .mid small{display:block;color:var(--muted);font-size:.85rem}
+.item .amt{flex:none;font-size:1.2rem;font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+.item.empty .amt{color:var(--muted);font-weight:400;font-size:1rem}
+.item.static{cursor:default}
+.floor{font-size:.95rem;color:var(--muted);margin:14px 2px 2px;font-weight:700}
+.sumline{display:flex;justify-content:space-between;gap:10px;padding:12px 4px;border-top:2px solid var(--line);margin-top:10px;font-size:1.1rem;font-weight:700}
+.calc{width:100%;border-collapse:collapse;font-size:1.05rem}
+.calc td{padding:12px 4px;border-bottom:1px solid var(--line)}.calc td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.calc tr.tot td{font-size:1.25rem;border-bottom:2px solid var(--fg)}
+.calc .op{color:var(--muted);width:1.5em}
+.red{color:var(--red)}.green{color:var(--green)}.muted{color:var(--muted)}.neg{color:var(--blue)}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.8rem;background:var(--bluebg);color:var(--blue)}
+/* 넓은 표(나누기·지난 기록·변경 기록) */
+.wrap{overflow:auto;border:1px solid var(--line);border-radius:10px}
+table.t{border-collapse:collapse;width:100%;font-size:.95rem}
+table.t th,table.t td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;white-space:nowrap}
+table.t th{background:var(--surface2);position:sticky;top:0}
+table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
+table.t tr.tot td{font-weight:700;background:var(--surface2)}
+input.c{width:100%;min-width:80px;padding:8px 10px;border:1px solid var(--inputline);border-radius:8px;background:var(--input);color:var(--fg);font-size:1rem}
+input.c.num{text-align:right}input.c[readonly]{background:transparent;border-color:transparent}
+select.c{padding:8px;border:1px solid var(--inputline);border-radius:8px;background:var(--input);color:var(--fg);font-size:1rem}
+textarea{width:100%;min-height:90px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--fg);font-size:1rem}
+.log{border-bottom:1px solid var(--line);padding:10px 0}.log ul{margin:6px 0 0;padding-left:20px;color:var(--muted)}
+/* 큰 입력창 (아래에서 올라옴) */
+#sheet{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;z-index:30}
+#sheet .box{background:var(--surface);color:var(--fg);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px));display:grid;gap:14px}
+@media(min-width:700px){#sheet{align-items:center}#sheet .box{border-radius:18px}}
+#sheet .hd{display:flex;justify-content:space-between;align-items:center;gap:10px}
+#sheet .hd b{font-size:1.35rem}
+#sheet label{display:grid;gap:6px;font-size:1rem;color:var(--muted);min-width:0}
+#sheet label small{font-size:.85rem}
+#sheet input,#sheet select{width:100%;min-width:0;font-size:1.5rem;padding:12px 14px;border:2px solid var(--inputline);border-radius:10px;background:var(--input);color:var(--fg)}
+#sheet input.num{text-align:right;font-variant-numeric:tabular-nums}
+#sheet .chips{display:flex;flex-wrap:wrap;gap:6px}
+#sheet .chips button{min-height:40px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface2);color:var(--fg);font-size:.95rem;cursor:pointer}
+#sheet .hint{font-size:1.05rem;color:var(--fg);background:var(--surface2);border-radius:10px;padding:10px 12px}
+#sheet .row{display:flex;gap:10px}#sheet .row .btn{flex:1;min-height:58px;font-size:1.1rem}
+#sheet .row .btn.p{flex:2}
+/* 확인창 */
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:40;padding:16px}
+#modal .box{background:var(--surface);color:var(--fg);border-radius:16px;padding:22px;max-width:460px;width:100%;white-space:pre-line;font-size:1.1rem}
+#modal .row{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}#modal .row .btn{flex:1}
+#toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:14px 22px;border-radius:12px;z-index:50;max-width:92vw;font-size:1.05rem;text-align:center}
+.empty{text-align:center;padding:60px 16px;color:var(--muted);font-size:1.1rem}
+/* 로그인 */
+#login{max-width:420px;margin:10vh auto 0;padding:0 16px}
+#login form{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:26px;display:grid;gap:14px}
+#login h1{font-size:1.4rem;margin:0}
+#login label{display:grid;gap:6px;color:var(--muted)}
+#login input{font-size:1.2rem;padding:12px;border:2px solid var(--line);border-radius:10px;background:var(--surface2);color:var(--fg)}
+#loginMsg{min-height:1.4em;color:var(--red)}
+.linkbtn{background:none;border:0;color:var(--blue);cursor:pointer;font-size:1rem;padding:6px 0;text-decoration:underline;text-align:left}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
-#login{max-width:380px;margin:12vh auto 0;padding-inline:16px}
-#login form{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:24px;display:grid;gap:10px}
-#login h1{font-size:19px;margin:0 0 6px}
-#login label{font-size:13px;color:var(--muted);display:grid;gap:4px}
-#login input{font:inherit;color:var(--fg);background:var(--surface2);padding:9px 10px;border:1px solid var(--line);border-radius:6px}
-#login .links{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
-#loginMsg{min-height:1.4em;color:var(--red);font-size:13px}
-.linkbtn{background:none;border:0;color:var(--blue);cursor:pointer;font:inherit;font-size:13px;padding:0;text-decoration:underline}
-#who{font-size:12px;opacity:.85}
 </style>
 </head>
 <body>
 <div id="login" hidden>
   <form id="loginForm">
-    <h1>정연지오빌1 관리비 정산</h1>
-    <p class="muted" style="margin:0 0 6px;font-size:13px">허용된 계정만 볼 수 있습니다.</p>
+    <h1>정연지오빌1 관리비 장부</h1>
+    <p class="muted" style="margin:0">허락된 사람만 볼 수 있습니다.</p>
     <label>이메일<input id="email" type="email" autocomplete="username" required></label>
-    <label>비밀번호<input id="pw" type="password" autocomplete="current-password" minlength="6" required></label>
-    <button class="btn p" id="loginBtn" type="submit">로그인</button>
-    <div class="links"><span class="muted" style="font-size:12px">계정은 관리자만 만들 수 있습니다</span><button class="linkbtn" id="resetBtn" type="button">비밀번호를 잊었어요</button></div>
+    <label>비밀번호<input id="pw" type="password" autocomplete="current-password" required></label>
+    <button class="btn p full" id="loginBtn" type="submit">들어가기</button>
+    <button class="linkbtn" id="resetBtn" type="button">비밀번호를 잊었어요</button>
     <div id="loginMsg" role="status"></div>
   </form>
 </div>
 <div id="app" hidden>
-<header>
-  <h1>정연지오빌1 관리비 정산</h1>
-  <label>정산월 <select id="period"></select></label>
-  <button id="newMonth"><span class="l">+ 새 달 만들기</span><span class="s">+ 새 달</span></button>
-  <button id="exportX"><span class="l">엑셀로 내보내기</span><span class="s">엑셀</span></button>
-  <span class="sp"></span>
-  <span class="sync" id="sync">연결 중…</span>
-  <span id="who"></span>
-  <button id="logout">로그아웃</button>
-  <button id="undo" title="이번 접속에서 마지막으로 바꾼 내용을 되돌립니다" aria-label="되돌리기">↶<span class="l"> 되돌리기</span></button>
-</header>
-<nav id="tabs"></nav>
-<main id="main"><div class="empty">관리비 자료를 불러오는 중입니다…</div></main>
+  <div class="top"><h1>정연지오빌1 관리비 장부</h1><span class="sync" id="sync">연결 중…</span><span id="who" hidden></span><button id="logout" hidden></button></div>
+  <div class="monthbar"><button class="arrow" id="mPrev" aria-label="이전 달">◀</button><div class="m" id="mLabel"></div><button class="arrow" id="mNext" aria-label="다음 달">▶</button></div>
+  <main id="main"><div class="empty">장부를 불러오는 중입니다…</div></main>
 </div>
-<div id="toast" hidden></div>
+<div id="sheet" hidden><div class="box" id="sheetBox"></div></div>
 <div id="modal" hidden><div class="box"><div id="modalMsg"></div><div class="row"><button class="btn" id="modalNo">취소</button><button class="btn p" id="modalYes">확인</button></div></div></div>
+<div id="toast" hidden></div>
 <input type="file" id="restoreFile" accept=".json" hidden>
-<div id="quick" hidden><div class="qbox">
-  <div class="qtop"><span id="qPos"></span><button class="btn s" id="qClose">닫기</button></div>
-  <div class="qroom"><b id="qRoom"></b> <span id="qName"></span></div>
-  <label>당월 전기 <small id="qEp"></small><input id="qEc" inputmode="numeric" autocomplete="off"></label>
-  <label id="qWl">당월 수도 <small id="qWp"></small><input id="qWc" inputmode="numeric" autocomplete="off"></label>
-  <div id="qUse" class="muted"></div>
-  <div class="row"><button class="btn" id="qPrev">◀ 이전</button><button class="btn p" id="qNext">저장 후 다음 ▶</button></div>
-</div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -382,35 +383,35 @@ function overpaidTotal(p){if(!hasBilling(p))return 0;return sum(Object.values(le
 
 function checks(p){
   const out=[],x=P(p),rows=meterRows(p);
-  if(x.closed)out.push(['ok',`이 달은 ${nowStr(x.closed.atMs)}에 마감되었습니다 (통장 ${won(x.closed.bank)}, 시재 ${won(x.closed.cash)}).`]);
+  if(x.closed)out.push(['ok',`이 달은 마감했습니다 (${nowStr(x.closed.atMs)}). 통장 ${won(x.closed.bank)}, 현금 ${won(x.closed.cash)}`]);
   const miss=rows.filter(r=>r.ec===null||r.ec===undefined);
-  if(miss.length)out.push(['warn',`전기 검침값이 비어 있는 호실 ${miss.length}곳: ${miss.map(r=>r.room).join(', ')}`]);
+  if(miss.length)out.push(['warn',`전기 숫자를 아직 안 넣은 집 ${miss.length}곳: ${miss.map(r=>r.room).join(', ')}호`]);
   const neg=rows.filter(r=>r.e.neg||r.w.neg);
-  if(neg.length)out.push(['err',`사용량이 마이너스인 호실: ${neg.map(r=>r.room+'호').join(', ')} — 검침값을 확인하세요.`]);
+  if(neg.length)out.push(['err',`사용량이 마이너스로 나온 집: ${neg.map(r=>r.room+'호').join(', ')} — 숫자를 다시 확인하세요.`]);
   const roll=rows.filter(r=>r.e.roll);
-  if(roll.length)out.push(['info',`계량기가 한 바퀴(10000) 돈 호실: ${roll.map(r=>`${r.room}호(${fmt(r.e.u)})`).join(', ')} — 자동으로 계산했습니다.`]);
+  if(roll.length)out.push(['info',`계량기가 한 바퀴 돈 집: ${roll.map(r=>`${r.room}호(${fmt(r.e.u)})`).join(', ')} — 자동으로 맞게 계산했습니다.`]);
   // 평소 대비 급증: 최근 6개월 평균의 3배 이상이면서, 작년 같은 달의 2배 이상일 때만 (여름·겨울 계절 증가는 제외)
   const ps=periods(),i=ps.indexOf(p),hist=ps.slice(Math.max(0,i-6),i);
   const hm=hist.map(q=>Object.fromEntries(meterRows(q).map(z=>[z.room,z.e.u])));
   const ly=(+p.slice(0,4)-1)+p.slice(4),lym=S.periods[ly]?Object.fromEntries(meterRows(ly).map(z=>[z.room,z.e.u])):null;
   const spikes=rows.filter(r=>{if(!(r.e.u>0))return false;const h=hm.map(mp=>{const u=mp[r.room];return u>0&&u<3000?u:null}).filter(v=>v!==null);if(h.length<3)return r.e.u>1500;const avg=sum(h)/h.length;const lyv=lym&&lym[r.room]>0&&lym[r.room]<3000?lym[r.room]:null;return r.e.u>Math.max(avg*3,avg+300)&&(lyv===null||r.e.u>lyv*2)});
-  if(spikes.length)out.push(['warn',`전기 사용량이 평소보다 크게 늘어난 호실: ${spikes.map(r=>`${r.room}호(${fmt(r.e.u)})`).join(', ')} — 오기 여부를 확인하세요.`]);
+  if(spikes.length)out.push(['warn',`전기를 평소보다 훨씬 많이 쓴 집: ${spikes.map(r=>`${r.room}호(${fmt(r.e.u)})`).join(', ')} — 숫자를 잘못 넣지 않았는지 확인하세요.`]);
   if(finActive(p)){
     const rs=new Set(roomsOf(p));
     const bad=x.payments.filter(a=>a.amount&&!rs.has(String(a.room)));
-    if(bad.length)out.push(['err',`호실 번호가 잘못된 입금 ${bad.length}건: ${bad.map(a=>a.room||'(빈칸)').join(', ')}`]);
+    if(bad.length)out.push(['err',`호수가 잘못 적힌 입금 ${bad.length}건: ${bad.map(a=>a.room||'(빈칸)').join(', ')}`]);
     const seen={},dup=[];x.payments.forEach(a=>{const k=a.room+'|'+a.date+'|'+a.amount;if(a.amount&&seen[k])dup.push(a.room+'호');seen[k]=1});
-    if(dup.length)out.push(['warn',`같은 호실·날짜·금액으로 두 번 들어간 입금: ${dup.join(', ')} — 중복 입력인지 확인하세요.`]);
+    if(dup.length)out.push(['warn',`같은 입금이 두 번 들어간 것 같은 집: ${dup.join(', ')} — 확인하세요.`]);
     const paid=new Set(x.payments.filter(a=>a.amount>0).map(a=>String(a.room)));
     const none=roomsOf(p).filter(r=>!paid.has(r));
-    if(none.length&&none.length<roomsOf(p).length)out.push(['warn',`입금 기록이 없는 호실 ${none.length}곳: ${none.join(', ')}`]);
+    if(none.length&&none.length<roomsOf(p).length)out.push(['warn',none.length>8?`아직 입금이 없는 집이 ${none.length}곳 있습니다. (② 들어온 관리비 화면 아래에서 볼 수 있어요)`:`아직 입금이 없는 집 ${none.length}곳: ${none.join(', ')}호`]);
     const c=closing(p);
     if(x.reported){
       const d=[['통장 잔여금',x.reported.bank,c.bank],['시재 잔액',x.reported.cash,c.cash],['총 합계금',x.reported.total,c.total]].filter(t=>t[1]!=null&&t[1]!==t[2]);
       if(d.length)d.forEach(t=>out.push(['err',`${t[0]}: 원본 ${won(t[1])} ↔ 계산 ${won(t[2])} (차이 ${won(t[2]-t[1])})`]));
-      else out.push(['ok',`원본 엑셀의 통장 잔여금 ${won(x.reported.bank)}·총 합계금 ${won(x.reported.total)}과 계산값이 일치합니다.`]);
+      else out.push(['ok',`예전 엑셀의 통장 잔액 ${won(x.reported.bank)}과 똑같이 맞습니다.`]);
     }
-    if(c&&c.cash<0)out.push(['err',`시재 잔액이 마이너스입니다 (${won(c.cash)}).`]);
+    if(c&&c.cash<0)out.push(['err',`현금(시재)이 마이너스입니다 (${won(c.cash)}). 현금 지출을 확인하세요.`]);
     if(hasBilling(p)){
       const B=billing(p),tot=sum(B.itemRes.map(r=>r.total));
       out.push(['info',`당월 부과 총액 ${won(B.sum)} (항목 합계 ${won(tot)}${B.sum-tot?`, 반올림·조정 차이 ${won(B.sum-tot)}`:''}) · 통장 지출 ${won(c?c.exp:0)}`]);
@@ -420,213 +421,308 @@ function checks(p){
       const ar=x.arrears.filter(a=>arrearLeft(a,p)>0);
       if(ar.length)out.push(['info',`미납 ${ar.length}세대, 합계 ${won(unpaidTotal(p))}`]);
     }
-    const q=prevOf(p);if(q&&!x.opening&&finActive(q)&&!P(q).closed)out.push(['info',`이월금이 ${label(q)} 결산에서 자동으로 계산되고 있습니다. ${label(q)}을 마감하면 고정됩니다.`]);
-  }else out.push(['info','이 달은 검침 기록만 있습니다. 입금·지출은 원본 엑셀에 이 달 기록이 없거나 아직 입력 전입니다.']);
-  if(p===periods().slice(-1)[0]){const lb=APPMETA.lastBackup||0;if(Date.now()-lb>31*864e5)out.push(['warn',lb?`마지막 백업이 ${nowStr(lb)}입니다. 설정·백업에서 백업 파일을 내려받아 두세요.`:'아직 백업 파일을 한 번도 내려받지 않았습니다. 설정·백업에서 내려받아 두세요.'])}
+    const q=prevOf(p);if(q&&!x.opening&&finActive(q)&&!P(q).closed)out.push(['info',`지난달(${label(q)})을 아직 마감하지 않았습니다. 지난달 결산을 확인하고 마감해 주세요.`]);
+  }else out.push(['info','이 달은 검침 숫자만 있습니다 (예전 엑셀에 입금·지출 기록이 없음).']);
+  if(p===periods().slice(-1)[0]){const lb=APPMETA.lastBackup||0;if(Date.now()-lb>31*864e5)out.push(['warn',lb?`마지막 백업이 ${nowStr(lb)}입니다. [백업·설정]에서 백업 파일을 받아 두세요.`:'아직 백업 파일을 한 번도 받지 않았습니다. [백업·설정]에서 받아 두세요.'])}
   return out;
 }
-/* ---------- 화면 ---------- */
-const TABS=[['summary','점검·요약'],['meters','① 검침'],['billing','② 부과'],['payments','③ 입금'],['expenses','④ 지출·시재'],['arrears','⑤ 미납'],['close','⑥ 월결산'],['history','지난 기록·호실 이력'],['logs','변경 기록'],['settings','설정·백업']];
+/* ---------- 화면 (어르신용) ---------- */
+const MONTHN=p=>+p.slice(5);
 function render(){
   memoClear();
-  const ps=periods();
+  const ps=periods(),main=$('#main');
   if(!ps.length){
-    $('#period').innerHTML='';$('#tabs').innerHTML='';
-    $('#main').innerHTML=ready?`<div class="empty">아직 저장된 관리비 자료가 없습니다.<br>'백업 파일로 복원'으로 백업(.json) 파일을 올려 주세요.<br><br><button class="btn p" data-act="restore">백업 파일로 복원</button></div>`:'<div class="empty">관리비 자료를 불러오는 중입니다…</div>';
+    $('#mLabel').textContent='';$('#mPrev').disabled=$('#mNext').disabled=true;
+    main.innerHTML=ready?`<div class="empty">아직 장부 자료가 없습니다.<br><br><button class="btn p" data-act="restore">백업 파일로 자료 넣기</button></div>`:'<div class="empty">장부를 불러오는 중입니다…</div>';
     return;
   }
   if(!S.periods[cur])cur=ps[ps.length-1];
-  $('#period').innerHTML=ps.slice().reverse().map(p=>`<option value="${p}" ${p===cur?'selected':''}>${label(p)}${P(p).closed?' ✔마감':finActive(p)?'':' (검침)'}</option>`).join('');
-  const nErr=checks(cur).filter(c=>c[0]==='err').length;
-  $('#tabs').innerHTML=TABS.map(([k,t])=>`<button data-tab="${k}" class="${k===tab?'on':''}">${t}${k==='summary'&&nErr?`<span class="badge">${nErr}</span>`:''}</button>`).join('');
-  $('#main').innerHTML=VIEWS[tab]();
-  $('#newMonth').disabled=!canWrite;
+  const i=ps.indexOf(cur);
+  $('#mLabel').innerHTML=`${label(cur)}<small>${P(cur).closed?'✔ 마감한 달':!finActive(cur)?'검침 숫자만 있는 달':isLatest2(cur)?'지금 작업 중인 달':'지난 달'}</small>`;
+  $('#mPrev').disabled=i<=0;$('#mNext').disabled=i>=ps.length-1;
+  main.className=['billing','history','logs'].includes(tab)?'wide':'';
+  main.innerHTML=(tab==='home'?'':`<button class="back" data-go="home">← 처음 화면</button>`)+VIEWS[tab]();
   bindInputs();
   if(tab==='logs')loadLogs();
 }
 function lockBar(){
   const x=P();
-  if(x.closed)return `<div class="closed">✔ ${label(cur)}은 마감된 달입니다 (${nowStr(x.closed.atMs)}, ${esc(x.closed.by||'')}). 고치려면 ⑥ 월결산에서 '마감 해제'를 누르세요.</div>`;
+  if(x.closed)return `<div class="alert ok"><b>✔</b><span>이 달은 마감해서 고칠 수 없습니다. 고치려면 <b>결산</b> 화면에서 '마감 풀기'를 누르세요.</span></div>`;
   if(editable(cur)||!canWrite)return '';
-  return `<div class="lock">🔒 지난 달(${label(cur)})은 실수로 바뀌지 않도록 잠겨 있습니다. <button class="btn s" data-act="unlock">이 달 수정하기</button></div>`;
+  return `<div class="alert warn"><b>🔒</b><span>지난 달이라 실수로 바뀌지 않게 잠가 두었습니다. <button class="btn s" data-act="unlock">이 달 고치기</button></span></div>`;
 }
 function cell(path,val,num,ro,extra){const id='f_'+cur+'_'+path.replace(/\|/g,'_');return `<input class="c ${num?'num':''}" id="${id}" data-path="${path}" value="${esc(num?fmt(val):val)}" ${ro||!editable(cur)?'readonly':''} ${num?'inputmode="numeric"':''} ${extra||''}>`}
 function bindInputs(){
-  document.querySelectorAll('[data-path]').forEach(el=>el.addEventListener('change',()=>{
+  document.querySelectorAll('#main [data-path]').forEach(el=>el.addEventListener('change',()=>{
     const [list,i,f]=el.dataset.path.split('|');const num=el.classList.contains('num');
-    let v=el.value.trim();if(num){v=toNum(v);if(Number.isNaN(v)){toast('숫자만 입력하세요');el.value='';return}}
-    if(f==='date')v=normDate(v);
+    let v=el.value.trim();if(num){v=toNum(v);if(Number.isNaN(v)){toast('숫자만 넣어 주세요');el.value='';return}}
     change(cur,x=>{
-      let tgt;
-      if(list==='opening')tgt=x.opening=x.opening||(()=>{const o=opening(cur)||{bank:0,interest:0,cash:0};return {bank:o.bank,interest:o.interest||0,cash:o.cash}})();
-      else if(list==='bitem')tgt=x.billing.items[+i];
-      else if(list==='badj'){x.billing.adjust=x.billing.adjust||{};if(v===null||v===0)delete x.billing.adjust[i];else x.billing.adjust[i]=v;return}
-      else if(list==='bunit'){x.billing.unit=+v;return}
-      else tgt=x[list][+i];
-      tgt[f]=num?(v===null&&list!=='meters'?0:v):v;
+      if(list==='bitem'){x.billing.items[+i][f]=num?(v??0):v;return}
+      if(list==='badj'){x.billing.adjust=x.billing.adjust||{};if(!v)delete x.billing.adjust[i];else x.billing.adjust[i]=v;return}
+      if(list==='bunit'){x.billing.unit=+v;return}
     });
     const y=window.scrollY;render();window.scrollTo(0,y);
   }));
 }
-const pill=(t,c)=>`<span class="pill ${c||'info'}">${t}</span>`;
+const alerts=p=>checks(p).filter(c=>c[0]==='err'||c[0]==='warn');
+function stepState(p){
+  const x=P(p),rows=meterRows(p),filled=rows.filter(r=>r.ec!=null).length;
+  return {
+    meters:{done:filled===rows.length,txt:filled===rows.length?'다 넣음':`${filled}/${rows.length}집`},
+    pay:{done:x.payments.length>0,txt:x.payments.length?`${x.payments.length}건`:'아직 없음'},
+    exp:{done:x.expenses.length+x.cash.length>0,txt:x.expenses.length+x.cash.length?`${x.expenses.length+x.cash.length}건`:'아직 없음'},
+    close:{done:!!x.closed,txt:x.closed?'마감함':'마감 전'}
+  };
+}
 const VIEWS={
-summary(){
-  const x=P(),rows=meterRows(cur),c=finActive(cur)?closing(cur):null;
-  const eu=sum(rows.map(r=>r.e.u)),wu=sum(rows.map(r=>r.w.u));
-  const cards=[['전기 사용량 합계',fmt(eu)],['수도 사용량 합계',rows.some(r=>r.w.u!==null)?fmt(wu):'— (격월)']];
-  if(hasBilling(cur))cards.push(['당월 부과 총액',won(billing(cur).sum)]);
-  if(c){const un=unpaidTotal(cur);cards.push(['관리비 입금 합계',won(c.pay),'green'],['미납 합계',won(un),un?'red':''],['통장 지출 합계',won(c.exp)],['통장 잔여금',won(c.bank)],['총 합계금(통장+시재)',won(c.total)])}
-  const m=META[cur];
-  return `<div class="cards">${cards.map(([k,v,cl])=>`<div class="card"><div class="k">${k}</div><div class="v ${cl||''}">${v}</div></div>`).join('')}</div>
-  <div class="panel"><h2>점검 결과 <small>${label(cur)} · 자동 대조${m&&m.at?` · 마지막 수정 ${nowStr(m.at)} ${esc(m.by||'')}`:''}</small></h2>${checks(cur).map(([t,s])=>`<div class="msg ${t}"><b>${{err:'오류',warn:'주의',info:'참고',ok:'정상'}[t]}</b><span>${esc(s)}</span></div>`).join('')}</div>
-  <div class="panel"><h2>이 달 메모</h2>${editable(cur)?`<textarea id="memo">${esc(x.memo||'')}</textarea>`:`<p>${esc(x.memo||'')}</p>`}</div>
-  <div class="panel"><h2>매달 순서</h2><ol style="margin:0;line-height:1.9">
-  <li><b>+ 새 달 만들기</b> (한 달에 한 번) — 입주자·전월 검침값·잔액·미납이 이어집니다.</li>
-  <li><b>① 검침</b> — 휴대폰이면 '한 호실씩 입력'이 편합니다. 전기는 매월, 수도는 홀수 달.</li>
-  <li><b>② 부과</b> — 고지서 총액을 항목별로 넣으면 호실별 부과액이 계산됩니다 (선택).</li>
-  <li><b>③ 입금</b> · <b>④ 지출·시재</b> 입력 → <b>⑤ 미납</b>은 자동 계산.</li>
-  <li><b>⑥ 월결산</b>에서 확인 후 <b>이 달 마감</b> → <b>엑셀로 내보내기</b>.</li></ol></div>`;
+home(){
+  const x=P(),c=finActive(cur)?closing(cur):null,st=stepState(cur),al=alerts(cur);
+  const un=finActive(cur)?unpaidTotal(cur):0,unN=finActive(cur)?(hasBilling(cur)?Object.values(ledger(cur).rows).filter(r=>r.end>0).length:x.arrears.filter(a=>arrearLeft(a,cur)>0).length):0;
+  const ps=periods(),last=ps[ps.length-1],np=nextPeriod(last),now=new Date(),limit=`${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}`;
+  const money=c?`<div class="money">
+    <div class="c big"><div class="k">통장에 남은 돈</div><div class="v">${won(c.bank)}</div></div>
+    <div class="c"><div class="k">들어온 관리비</div><div class="v green">${won(c.pay)}</div></div>
+    <div class="c"><div class="k">나간 돈</div><div class="v">${won(c.exp)}</div></div>
+    <div class="c"><div class="k">현금(시재)</div><div class="v">${won(c.cash)}</div></div>
+    <div class="c"><div class="k">안 낸 집</div><div class="v ${un?'red':''}">${unN?`${unN}집`:'없음'}${unN?`<div style="font-size:.85rem;font-weight:400">${won(un)}</div>`:''}</div></div></div>`:
+    `<div class="panel"><p style="margin:0">이 달은 <b>검침 숫자만</b> 있는 지난 기록입니다.</p></div>`;
+  const step=(n,go,title,sub,s)=>`<button data-go="${go}"><span class="n">${n}</span><span class="t"><b>${title}</b><span>${sub}</span></span><span class="st ${s.done?'done':'todo2'}">${s.txt}</span></button>`;
+  return `${money}
+  ${al.length?`<div class="panel"><h3>⚠ 확인해 주세요</h3>${al.map(([t,s])=>`<div class="alert ${t}"><span>${esc(s)}</span></div>`).join('')}</div>`:(c?`<div class="alert ok"><b>✔</b><span>지금 확인할 문제는 없습니다.</span></div>`:'')}
+  <h2 class="title" style="margin-top:8px">이번 달 할 일</h2>
+  <div class="todo">
+    ${step(1,'meters','검침 숫자','전기·수도 계량기 숫자',st.meters)}
+    ${step(2,'payments','들어온 관리비','통장에 들어온 관리비를 한 건씩',st.pay)}
+    ${step(3,'expenses','나간 돈','공과금·용역비 등 나간 돈',st.exp)}
+    ${step(4,'close','결산·마감','통장 잔액이 맞는지 보고 이 달을 잠그기',st.close)}
+  </div>
+  <h2 class="title">다른 메뉴</h2>
+  <div class="more">
+    <button data-go="arrears">💰 안 낸 집 보기</button>
+    <button data-act="exportX">📄 엑셀로 받기</button>
+    <button data-go="history">📈 지난 기록</button>
+    <button data-go="billing">➗ 관리비 나누기</button>
+    <button data-go="logs">🕘 고친 기록</button>
+    <button data-go="settings">⚙ 백업·설정</button>
+  </div>
+  ${cur===last&&np<=limit&&canWrite?`<div style="margin-top:20px"><button class="btn p full" data-act="newMonth">＋ 다음 달(${label(np)}) 장부 만들기</button><p class="muted" style="font-size:.9rem;margin:6px 2px">한 달에 한 번만 누르세요. 입주자 이름·지난 계량기 숫자·남은 돈·안 낸 돈이 넘어갑니다.</p></div>`:''}
+  ${editable(cur)?`<div class="panel" style="margin-top:16px"><h3>메모</h3><textarea id="memo" placeholder="이 달에 적어 둘 내용">${esc(x.memo||'')}</textarea></div>`:x.memo?`<div class="panel" style="margin-top:16px"><h3>메모</h3><p style="margin:0">${esc(x.memo)}</p></div>`:''}`;
 },
 meters(){
-  const rows=meterRows(cur),water=rows.some(r=>r.wc!==null&&r.wc!==undefined)||(+cur.slice(5))%2===1;
+  const rows=meterRows(cur),water=rows.some(r=>r.wc!=null)||MONTHN(cur)%2===1,ed=editable(cur);
+  const first=rows.findIndex(r=>r.ec==null);
   let h='';
   for(const f of ROOMS_FLOORS){
     const fr=rows.map((r,i)=>({...r,i})).filter(r=>r.room[0]==String(f));if(!fr.length)continue;
-    for(const r of fr){
-      h+=`<tr><td><b>${r.room}</b></td><td>${cell(`meters|${r.i}|name`,r.name)}</td><td class="n hide-m">${cell(`meters|${r.i}|ep`,r.ep,1)}</td><td class="n">${cell(`meters|${r.i}|ec`,r.ec,1)}</td><td class="n ${r.e.neg?'red':''}">${fmt(r.e.u)}${r.e.roll?' '+pill('한바퀴'):''}</td>`+
-      (water?`<td class="n hide-m">${cell(`meters|${r.i}|wp`,r.wp,1)}</td><td class="n">${cell(`meters|${r.i}|wc`,r.wc,1)}</td><td class="n ${r.w.neg?'red':''}">${fmt(r.w.u)}</td>`:'')+`</tr>`;
-    }
-    h+=`<tr class="sub"><td colspan="2">${f}층 소계</td><td class="n hide-m">${fmt(sum(fr.map(r=>r.ep)))}</td><td class="n">${fmt(sum(fr.map(r=>r.ec)))}</td><td class="n">${fmt(sum(fr.map(r=>r.e.u)))}</td>`+(water?`<td class="n hide-m">${fmt(sum(fr.map(r=>r.wp)))}</td><td class="n">${fmt(sum(fr.map(r=>r.wc)))}</td><td class="n">${fmt(sum(fr.map(r=>r.w.u)))}</td>`:'')+`</tr>`;
+    h+=`<div class="floor">${f}층</div>`+fr.map(r=>`<button class="item ${r.ec==null?'empty':''} ${ed?'':'static'}" ${ed?`data-act="meter" data-i="${r.i}"`:''}><span class="r">${r.room}</span><span class="mid">${esc(r.name)}<small>지난달 ${fmt(r.ep)}${water&&r.wp!=null?` · 수도 지난번 ${fmt(r.wp)}`:''}</small></span><span class="amt">${r.ec==null?'넣기 →':`${fmt(r.ec)}<br><small class="${r.e.neg?'red':'muted'}">사용 ${fmt(r.e.u)}${water&&r.wc!=null?` · 수도 ${fmt(r.w.u)}`:''}</small>`}</span></button>`).join('');
   }
-  h+=`<tr class="tot"><td colspan="2">합계</td><td class="n hide-m">${fmt(sum(rows.map(r=>r.ep)))}</td><td class="n">${fmt(sum(rows.map(r=>r.ec)))}</td><td class="n">${fmt(sum(rows.map(r=>r.e.u)))}</td>`+(water?`<td class="n hide-m">${fmt(sum(rows.map(r=>r.wp)))}</td><td class="n">${fmt(sum(rows.map(r=>r.wc)))}</td><td class="n">${fmt(sum(rows.map(r=>r.w.u)))}</td>`:'')+`</tr>`;
-  return lockBar()+`<div class="panel"><h2>① 검침 <small>${label(cur)} · 노란 칸에 입력하면 바로 저장${water?'':' · 짝수 달은 수도 검침 없음'}</small></h2>
-  ${editable(cur)?`<div class="bar"><button class="btn p" data-act="quick">📱 한 호실씩 입력 (휴대폰용)</button></div>`:''}
-  <div class="wrap"><table><thead><tr><th>호실</th><th>입주자</th><th class="n hide-m">전월 전기</th><th class="n">당월 전기</th><th class="n">전기 사용량</th>${water?'<th class="n hide-m">이전 수도</th><th class="n">당월 수도</th><th class="n">수도 사용량</th>':''}</tr></thead><tbody>${h}</tbody></table></div></div>`;
+  return lockBar()+`<h2 class="title">① 검침 숫자 넣기</h2><p class="lead">${water?'이번 달은 <b>전기와 수도</b>를 모두 넣습니다.':'이번 달은 <b>전기만</b> 넣습니다 (수도는 홀수 달).'} 집을 누르면 큰 입력창이 뜹니다.</p>
+  ${ed?`<button class="btn p full" data-act="meter" data-i="${first>=0?first:0}" style="margin-bottom:14px">${first>=0?`${rows[first].room}호부터 차례로 넣기`:'201호부터 차례로 다시 보기'}</button>`:''}
+  <div class="list">${h}</div>
+  <div class="sumline"><span>전기 사용 합계</span><span>${fmt(sum(rows.map(r=>r.e.u)))}</span></div>${water?`<div class="sumline" style="border:0;margin:0"><span>수도 사용 합계</span><span>${fmt(sum(rows.map(r=>r.w.u)))}</span></div>`:''}`;
+},
+payments(){
+  const x=P(),ed=editable(cur),names=Object.fromEntries(x.meters.map(r=>[r.room,r.name]));
+  const order=x.payments.map((a,i)=>i).sort((i,j)=>(+x.payments[i].room||0)-(+x.payments[j].room||0)||dateKey(x.payments[i].date)-dateKey(x.payments[j].date));
+  const items=order.map(i=>{const a=x.payments[i];return `<button class="item ${ed?'':'static'}" ${ed?`data-act="pay" data-i="${i}"`:''}><span class="r">${esc(a.room)}</span><span class="mid">${esc(a.payer||names[a.room]||'')}<small>${esc(a.date||'날짜 없음')}${a.note?' · '+esc(a.note):''}</small></span><span class="amt">${won(a.amount)}</span></button>`}).join('');
+  const paidRooms=new Set(x.payments.filter(a=>a.amount>0).map(a=>String(a.room)));
+  const notYet=roomsOf(cur).filter(r=>!paidRooms.has(r));
+  return lockBar()+`<h2 class="title">② 들어온 관리비</h2><p class="lead">통장에 관리비가 들어오면 <b>한 건씩</b> 넣으세요. 한 집이 두 번 나눠 내도 두 번 넣으면 됩니다.</p>
+  ${ed?`<button class="btn p full" data-act="pay" data-i="-1" style="margin-bottom:14px">＋ 들어온 돈 넣기</button>`:''}
+  <div class="list">${items||'<p class="muted">아직 넣은 입금이 없습니다.</p>'}</div>
+  <div class="sumline"><span>들어온 돈 합계 (${x.payments.length}건)</span><span class="green">${won(sum(x.payments.map(a=>a.amount)))}</span></div>
+  ${x.payments.length&&notYet.length?`<div class="panel" style="margin-top:12px"><h3>아직 입금이 없는 집 (${notYet.length}집)</h3><p style="margin:0;font-size:1.1rem">${notYet.map(r=>`<b>${r}</b>`).join(' · ')}</p></div>`:''}`;
+},
+expenses(){
+  const x=P(),ed=editable(cur),o=opening(cur);
+  const list=(l)=>x[l].map((a,i)=>`<button class="item ${ed?'':'static'}" ${ed?`data-act="exp" data-l="${l}" data-i="${i}"`:''}><span class="mid"><b>${esc(a.desc||'(내용 없음)')}</b><small>${esc(a.date||'날짜 없음')}${a.note?' · '+esc(a.note):''}</small></span><span class="amt">${won(a.amount)}</span></button>`).join('');
+  return lockBar()+`<h2 class="title">③ 나간 돈</h2><p class="lead">통장에서 나간 돈과, 손에 가진 현금(시재)에서 쓴 돈을 나눠서 넣습니다.</p>
+  <div class="panel"><h3>🏦 통장에서 나간 돈</h3>${ed?`<button class="btn p full" data-act="exp" data-l="expenses" data-i="-1" style="margin-bottom:12px">＋ 통장에서 나간 돈 넣기</button>`:''}
+  <div class="list">${list('expenses')||'<p class="muted">아직 없습니다.</p>'}</div>
+  <div class="sumline"><span>통장 지출 합계</span><span>${won(sum(x.expenses.map(a=>a.amount)))}</span></div></div>
+  <div class="panel"><h3>💵 현금(시재)에서 쓴 돈</h3><p class="muted" style="margin-top:0">지난달에서 넘어온 현금: <b>${won(o?o.cash:null)}</b></p>${ed?`<button class="btn full" data-act="exp" data-l="cash" data-i="-1" style="margin-bottom:12px">＋ 현금에서 쓴 돈 넣기</button>`:''}
+  <div class="list">${list('cash')||'<p class="muted">아직 없습니다.</p>'}</div>
+  <div class="sumline"><span>현금 사용 합계</span><span>${won(sum(x.cash.map(a=>a.amount)))}</span></div></div>`;
+},
+arrears(){
+  const x=P(),ed=editable(cur),names=Object.fromEntries(x.meters.map(r=>[r.room,r.name]));
+  if(!finActive(cur))return `<h2 class="title">안 낸 집</h2><p class="lead">이 달은 입금 기록이 없는 지난 기록입니다.</p>`;
+  if(hasBilling(cur)){
+    const L=ledger(cur),rs=roomsOf(cur).filter(r=>L.rows[r].end!==0).sort((a,b)=>L.rows[b].end-L.rows[a].end);
+    return `<h2 class="title">💰 안 낸 집 (자동 계산)</h2><p class="lead">남은 돈 = 지난달에 남은 돈 + 이번 달 관리비 − 이번 달 낸 돈</p>
+    <div class="money"><div class="c"><div class="k">안 낸 돈 합계</div><div class="v red">${won(unpaidTotal(cur))}</div></div><div class="c"><div class="k">더 낸 돈 (다음 달에 빼 줌)</div><div class="v neg">${won(overpaidTotal(cur))}</div></div></div>
+    <div class="list">${rs.map(r=>{const z=L.rows[r];return `<div class="item static"><span class="r">${r}</span><span class="mid">${esc(names[r])}<small>지난달 남은 ${fmt(z.carry)} + 이번 달 ${fmt(z.bill)} − 낸 돈 ${fmt(z.paid)}</small></span><span class="amt ${z.end>0?'red':'neg'}">${z.end>0?won(z.end):'더 냄 '+won(-z.end)}</span></div>`}).join('')||'<p class="muted">안 낸 집이 없습니다.</p>'}</div>`;
+  }
+  const rows=x.arrears.map((a,i)=>{const pd=arrearPaid(cur,a),left=arrearLeft(a,cur);return `<button class="item ${ed?'':'static'}" ${ed?`data-act="arr" data-i="${i}"`:''}><span class="r">${esc(a.room)}</span><span class="mid">${esc(a.name||names[a.room]||'')}<small>내야 할 돈 ${fmt((+a.charge||0)+(+a.lateFee||0))} − 이번 달 낸 돈 ${fmt(pd)}${a.note?' · '+esc(a.note):''}</small></span><span class="amt ${left>0?'red':'green'}">${left>0?won(left):'다 냄'}</span></button>`}).join('');
+  return lockBar()+`<h2 class="title">💰 안 낸 집</h2><p class="lead">'낸 돈'은 ② 들어온 관리비에 넣은 그 집 입금이 <b>자동으로</b> 더해집니다.</p>
+  ${ed?`<button class="btn full" data-act="arr" data-i="-1" style="margin-bottom:12px">＋ 안 낸 집 추가</button>`:''}
+  <div class="list">${rows||'<p class="muted">안 낸 집이 없습니다.</p>'}</div>
+  <div class="sumline"><span>아직 안 낸 돈 합계</span><span class="red">${won(unpaidTotal(cur))}</span></div>`;
+},
+close(){
+  if(!finActive(cur))return `<h2 class="title">④ 결산</h2><p class="lead">이 달은 입금·지출 기록이 없어 결산할 수 없습니다.</p>`;
+  const o=opening(cur),c=closing(cur),x=P(),m=MONTHN(cur),pm=m===1?12:m-1;
+  return lockBar()+`<h2 class="title">④ ${m}월분 결산</h2><p class="lead">통장 앱의 실제 잔액과 아래 <b>'통장에 남은 돈'</b>이 같은지 확인하세요.</p>
+  <div class="panel"><h3>🏦 통장</h3><table class="calc">
+  <tr><td class="op"></td><td>${pm}월에서 넘어온 돈</td><td>${won(o.bank)}</td></tr>
+  ${o.interest?`<tr><td class="op">+</td><td>이자</td><td>${won(o.interest)}</td></tr>`:''}
+  <tr><td class="op">+</td><td>들어온 관리비</td><td class="green">${won(c.pay)}</td></tr>
+  <tr><td class="op">−</td><td>나간 돈</td><td>${won(c.exp)}</td></tr>
+  <tr class="tot"><td class="op">=</td><td>통장에 남은 돈</td><td>${won(c.bank)}</td></tr></table></div>
+  <div class="panel"><h3>💵 현금(시재)</h3><table class="calc">
+  <tr><td class="op"></td><td>넘어온 현금</td><td>${won(o.cash)}</td></tr>
+  <tr><td class="op">−</td><td>현금으로 쓴 돈</td><td>${won(c.cashUsed)}</td></tr>
+  <tr class="tot"><td class="op">=</td><td>현금 남은 돈</td><td>${won(c.cash)}</td></tr></table></div>
+  <div class="money"><div class="c big"><div class="k">통장 + 현금 모두 합한 돈</div><div class="v">${won(c.total)}</div></div></div>
+  ${x.reported?`<div class="alert ${x.reported.bank===c.bank?'ok':'err'}"><span>예전 엑셀에 적힌 통장 잔액 ${won(x.reported.bank)} — ${x.reported.bank===c.bank?'똑같습니다 ✔':'다릅니다! 확인이 필요합니다'}</span></div>`:''}
+  ${canWrite?(x.closed?`<button class="btn d full" data-act="reopen">마감 풀기 (다시 고치기)</button>`:`<button class="btn p full" data-act="closeMonth" style="min-height:64px;font-size:1.15rem">✔ 통장 잔액이 맞아요 — 이번 달 마감하기</button>
+  <p class="muted" style="font-size:.95rem">마감하면 이 숫자가 다음 달로 넘어가고, 이 달은 잠겨서 실수로 바뀌지 않습니다.</p>
+  ${editable(cur)?`<button class="btn s" data-act="editOpening">넘어온 돈 숫자 고치기</button>`:''}`):''}`;
 },
 billing(){
   const x=P(),b=x.billing,ed=editable(cur);
   if(!b||!(b.items||[]).length&&!Object.keys(b.adjust||{}).length){
-    return lockBar()+`<div class="panel"><h2>② 부과 <small>${label(cur)}</small></h2>
-    <p>고지서 총액(도급비·전기·수도 등)을 항목별로 넣고 <b>나누는 방식</b>을 고르면 호실별 부과액이 자동 계산됩니다. 부과를 쓰면 <b>⑤ 미납</b>이 '이월 + 부과 − 입금'으로 호실마다 자동 계산됩니다.</p>
-    <p class="muted">부과를 쓰지 않는 달은 지금처럼 ⑤ 미납 목록에 직접 적는 방식으로 동작합니다.</p>
-    ${ed?`<div class="bar"><button class="btn p" data-act="bill-start">부과 시작 (기본 항목 넣기)</button><button class="btn" data-act="bill-copy">지난달 부과 항목 복사</button></div>`:''}</div>`;
+    return lockBar()+`<h2 class="title">➗ 관리비 나누기 (부과)</h2><div class="panel"><p style="margin-top:0">고지서 금액(용역비·전기·수도 등)을 넣고 <b>나누는 방법</b>을 고르면, 집마다 낼 관리비가 자동으로 계산됩니다.</p>
+    <p class="muted">쓰지 않으셔도 됩니다. 쓰면 '안 낸 집'이 집마다 자동으로 계산됩니다.</p>
+    ${ed?`<div class="bar"><button class="btn p" data-act="bill-start">시작하기 (기본 항목 넣기)</button><button class="btn" data-act="bill-copy">지난달 항목 가져오기</button></div>`:''}</div>`;
   }
   const B=billing(cur),rooms=roomsOf(cur),names=Object.fromEntries(x.meters.map(r=>[r.room,r.name])),items=b.items||[];
   const itemRows=items.map((it,i)=>`<tr><td>${cell(`bitem|${i}|name`,it.name)}</td><td class="n">${cell(`bitem|${i}|total`,it.total,1)}</td>
     <td><select class="c" data-path="bitem|${i}|method" ${ed?'':'disabled'}>${Object.entries(METHODS).map(([k,v])=>`<option value="${k}" ${it.method===k?'selected':''}>${v}</option>`).join('')}</select></td>
     <td>${cell(`bitem|${i}|exclude`,it.exclude||'',0,0,'placeholder="예: 203, 310"')}</td>
-    <td class="n">${B?fmt(B.itemRes[i].alloc):''}${B&&B.itemRes[i].diff?` <small class="muted">(${B.itemRes[i].diff>0?'+':''}${fmt(B.itemRes[i].diff)})</small>`:''}</td>
     <td>${ed?`<button class="btn s d" data-act="bill-del" data-i="${i}">삭제</button>`:''}</td></tr>`).join('');
-  const per=rooms.map(r=>`<tr><td><b>${r}</b></td><td class="hide-m">${esc(names[r])}</td>${items.map((it,i)=>`<td class="n">${fmt(B?B.per[r].items[i]:0)}</td>`).join('')}<td class="n">${cell(`badj|${r}|v`,(b.adjust||{})[r]||null,1)}</td><td class="n"><b>${fmt(B?B.per[r].total:0)}</b></td></tr>`).join('');
-  return lockBar()+`<div class="panel"><h2>② 부과 항목 <small>${label(cur)} · 반올림
-    <select class="c" data-path="bunit|0|v" ${ed?'':'disabled'}>${[1,10,100].map(u=>`<option value="${u}" ${(b.unit||10)==u?'selected':''}>${u}원 단위</option>`).join('')}</select></small></h2>
-    ${ed?`<div class="bar"><button class="btn" data-act="bill-add">+ 항목 추가</button></div>`:''}
-    <div class="wrap"><table><thead><tr><th>항목</th><th class="n">고지서 총액</th><th>나누는 방식</th><th>제외 호실(공실 등)</th><th class="n">배분 합계</th><th></th></tr></thead><tbody>${itemRows}</tbody>
-    <tfoot><tr class="tot"><td>합계</td><td class="n">${fmt(sum(items.map(i=>i.total)))}</td><td colspan="2"></td><td class="n">${B?fmt(sum(B.itemRes.map(r=>r.alloc))):''}</td><td></td></tr></tfoot></table></div>
-    <p class="muted">전기 비례는 이 달 전기 사용량, 수도 비례는 ${B&&B.waterFrom?label(B.waterFrom)+' 수도 사용량':'가장 최근 수도 사용량'} 기준입니다. 괄호 숫자는 반올림 때문에 생긴 차이입니다.</p></div>
-    <div class="panel"><h2>호실별 부과액 <small>개별 조정 칸에 +/− 금액을 넣으면 더하거나 뺍니다</small></h2>
-    <div class="wrap"><table><thead><tr><th>호실</th><th class="hide-m">입주자</th>${items.map(it=>`<th class="n">${esc(it.name)}</th>`).join('')}<th class="n">개별 조정</th><th class="n">부과액</th></tr></thead><tbody>${per}</tbody>
-    <tfoot><tr class="tot"><td colspan="2">합계</td>${items.map((it,i)=>`<td class="n">${B?fmt(B.itemRes[i].alloc):''}</td>`).join('')}<td class="n">${fmt(sum(Object.values(b.adjust||{})))}</td><td class="n">${B?fmt(B.sum):''}</td></tr></tfoot></table></div></div>`;
-},
-payments(){
-  const x=P(),names=Object.fromEntries(x.meters.map(r=>[r.room,r.name])),ed=editable(cur);
-  const order=x.payments.map((a,i)=>i);if(VIEWS._psort==='date')order.sort((i,j)=>dateKey(x.payments[i].date)-dateKey(x.payments[j].date));else if(VIEWS._psort==='room')order.sort((i,j)=>(+x.payments[i].room||0)-(+x.payments[j].room||0));
-  const B=hasBilling(cur)?billing(cur):null;
-  const rows=order.map(i=>{const a=x.payments[i];return `<tr><td>${cell(`payments|${i}|room`,a.room,0,0,'inputmode="numeric" style="max-width:70px"')}</td><td class="muted hide-m">${esc(names[a.room]||'')}</td><td>${cell(`payments|${i}|payer`,a.payer)}</td><td>${cell(`payments|${i}|date`,a.date,0,0,'placeholder="8/26"')}</td><td class="n">${cell(`payments|${i}|amount`,a.amount,1)}</td>${B?`<td class="n muted hide-m">${fmt(B.per[a.room]?B.per[a.room].total:'')}</td>`:''}<td>${cell(`payments|${i}|note`,a.note)}</td><td>${ed?`<button class="btn s d" data-act="del" data-list="payments" data-i="${i}">삭제</button>`:''}</td></tr>`}).join('');
-  return lockBar()+`<div class="panel"><h2>③ 관리비 입금 내역 <small>${label(cur)} 관리비 · ${x.payments.length}건 · 날짜는 8/26처럼 넣으면 자동 정리</small></h2>
-  <div class="bar">${ed?`<button class="btn p" data-act="addPay">+ 입금 추가</button>${x.payments.length?'':`<button class="btn" data-act="fillPay">49개 호실 줄 만들기</button>`}`:''}
-  <span class="muted">정렬</span><button class="btn s" data-act="psort" data-v="">입력순</button><button class="btn s" data-act="psort" data-v="room">호실순</button><button class="btn s" data-act="psort" data-v="date">날짜순</button></div>
-  <div class="wrap"><table><thead><tr><th>호실</th><th class="hide-m">입주자(검침표)</th><th>입금자명</th><th>입금일</th><th class="n">입금액</th>${B?'<th class="n hide-m">당월 부과액</th>':''}<th>비고</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="8" class="muted">입금 기록이 없습니다.</td></tr>'}</tbody>
-  <tfoot><tr class="tot"><td colspan="4">합계</td><td class="n">${fmt(sum(x.payments.map(a=>a.amount)))}</td>${B?`<td class="n hide-m">${fmt(B.sum)}</td>`:''}<td colspan="2"></td></tr></tfoot></table></div></div>`;
-},
-expenses(){
-  const x=P(),o=opening(cur),ed=editable(cur);
-  const t=(list,title)=>`<div class="panel"><h2>${title}</h2>${ed?`<div class="bar"><button class="btn p" data-act="add" data-list="${list}">+ 지출 추가</button>${list==='expenses'&&!x.expenses.length&&prevOf(cur)&&P(prevOf(cur)).expenses.length?'<button class="btn" data-act="copyExp">지난달 지출 항목 복사</button>':''}</div>`:''}
-  <div class="wrap"><table><thead><tr><th>일자</th><th>지출 내용</th><th class="n">금액</th><th>비고</th><th></th></tr></thead><tbody>${x[list].map((a,i)=>`<tr><td>${cell(`${list}|${i}|date`,a.date,0,0,'placeholder="8/26"')}</td><td>${cell(`${list}|${i}|desc`,a.desc)}</td><td class="n">${cell(`${list}|${i}|amount`,a.amount,1)}</td><td>${cell(`${list}|${i}|note`,a.note)}</td><td>${ed?`<button class="btn s d" data-act="del" data-list="${list}" data-i="${i}">삭제</button>`:''}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">기록 없음</td></tr>'}</tbody>
-  <tfoot><tr class="tot"><td colspan="2">합계</td><td class="n">${fmt(sum(x[list].map(a=>a.amount)))}</td><td colspan="2"></td></tr></tfoot></table></div></div>`;
-  return lockBar()+t('expenses',`④ 통장 공과금 지출 내역 <small>${label(cur)}</small>`)+t('cash',`전도금(시재) 지출 내역 <small>이월금 ${won(o?o.cash:null)}</small>`);
-},
-arrears(){
-  const x=P(),ed=editable(cur);
-  if(hasBilling(cur)){
-    const L=ledger(cur),names=Object.fromEntries(x.meters.map(r=>[r.room,r.name]));
-    const rs=roomsOf(cur);
-    const rows=rs.map(r=>{const z=L.rows[r];return `<tr><td><b>${r}</b></td><td class="hide-m">${esc(names[r])}</td><td class="n">${fmt(z.carry)}</td><td class="n">${fmt(z.bill)}</td><td class="n">${fmt(z.paid)}</td><td class="n ${z.end>0?'red':z.end<0?'neg':''}"><b>${fmt(z.end)}</b>${z.end<0?' '+pill('과오납'):''}</td></tr>`}).join('');
-    const T=k=>sum(rs.map(r=>L.rows[r][k]));
-    return lockBar()+`<div class="panel"><h2>⑤ 미납 현황 (자동) <small>${label(cur)} · 잔액 = 전월 잔액 + 당월 부과 − 당월 입금</small></h2>
-    <div class="cards"><div class="card"><div class="k">미납 합계</div><div class="v red">${won(unpaidTotal(cur))}</div></div><div class="card"><div class="k">과오납 합계 (다음 달 차감)</div><div class="v neg">${won(overpaidTotal(cur))}</div></div></div>
-    <div class="wrap"><table><thead><tr><th>호실</th><th class="hide-m">입주자</th><th class="n">전월 잔액</th><th class="n">당월 부과</th><th class="n">당월 입금</th><th class="n">잔액</th></tr></thead><tbody>${rows}</tbody>
-    <tfoot><tr class="tot"><td colspan="2">합계</td><td class="n">${fmt(T('carry'))}</td><td class="n">${fmt(T('bill'))}</td><td class="n">${fmt(T('paid'))}</td><td class="n">${fmt(T('end'))}</td></tr></tfoot></table></div></div>`;
-  }
-  const rows=x.arrears.map((a,i)=>{const pd=arrearPaid(cur,a),left=arrearLeft(a,cur);return `<tr><td>${cell(`arrears|${i}|room`,a.room,0,0,'style="max-width:70px"')}</td><td>${cell(`arrears|${i}|name`,a.name)}</td><td class="n">${cell(`arrears|${i}|charge`,a.charge,1)}</td><td class="n">${cell(`arrears|${i}|lateFee`,a.lateFee,1)}</td><td class="n">${fmt(pd)}</td><td class="n ${left>0?'red':'green'}"><b>${fmt(left)}</b></td><td>${cell(`arrears|${i}|note`,a.note)}</td><td>${ed?`<button class="btn s d" data-act="del" data-list="arrears" data-i="${i}">삭제</button>`:''}</td></tr>`}).join('');
-  return lockBar()+`<div class="panel"><h2>⑤ 미납 현황 <small>${label(cur)} · 납부액은 ③ 입금에서 그 호실 입금액을 자동으로 더합니다</small></h2>
-  ${ed?`<div class="bar"><button class="btn p" data-act="add" data-list="arrears">+ 미납 세대 추가</button><span class="muted">② 부과를 쓰면 이 목록 대신 호실별 자동 계산으로 바뀝니다.</span></div>`:''}
-  <div class="wrap"><table><thead><tr><th>호실</th><th>입주자</th><th class="n">부과액(누적)</th><th class="n">연체료</th><th class="n">이번 달 입금</th><th class="n">남은 미납</th><th>비고</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="8" class="muted">미납 세대가 없습니다.</td></tr>'}</tbody>
-  <tfoot><tr class="tot"><td colspan="5">합계</td><td class="n red">${fmt(unpaidTotal(cur))}</td><td colspan="2"></td></tr></tfoot></table></div></div>`;
-},
-close(){
-  if(!finActive(cur))return `<div class="panel"><h2>⑥ 월결산</h2><p class="muted">${label(cur)}은 입금·지출 기록이 없어 결산을 계산할 수 없습니다. (검침 기록만 있음)</p></div>`;
-  const o=opening(cur),c=closing(cur),x=P(),m=+cur.slice(5),pm=m===1?12:m-1,ro=!editable(cur);
-  const autoTag=o.auto==='closed'?pill('전월 마감값','ok'):o.auto==='live'?pill('전월에서 자동','info'):pill('직접 입력','warn');
-  const closeBtn=canWrite?(x.closed?`<button class="btn d" data-act="reopen">마감 해제</button>`:`<button class="btn p" data-act="closeMonth">이 달 마감</button>`):'';
-  return lockBar()+`<div class="grid2"><div class="panel"><h2>⑥ ${m}월분 수입 및 지출 총액</h2><table class="calc">
-  <tr><td>${pm}월 통장 이월금 ${autoTag}</td><td class="n">${cell('opening|0|bank',o.bank,1,ro)}</td></tr>
-  <tr><td>결산 이자</td><td class="n">${cell('opening|0|interest',o.interest,1,ro)}</td></tr>
-  <tr><td>+ ${m}월 관리비 입금액</td><td class="n">${fmt(c.pay)}</td></tr>
-  <tr><td>− ${m}월 통장 지출금</td><td class="n">${fmt(c.exp)}</td></tr>
-  <tr class="tot"><td>= ${m}월 통장 잔여금</td><td class="n">${fmt(c.bank)}</td></tr>
-  <tr><td>시재 이월금</td><td class="n">${cell('opening|0|cash',o.cash,1,ro)}</td></tr>
-  <tr><td>− 시재 사용</td><td class="n">${fmt(c.cashUsed)}</td></tr>
-  <tr class="tot"><td>= ${m}월 시재 잔액</td><td class="n">${fmt(c.cash)}</td></tr>
-  <tr class="tot"><td>${m}월 총 합계금 잔액 (통장+시재)</td><td class="n">${fmt(c.total)}</td></tr></table>
-  <div class="bar" style="margin-top:12px">${closeBtn}</div>
-  <p class="muted">마감하면 이 달 잔액이 고정되어, 다음 달 이월금이 더 이상 바뀌지 않고 이 달은 수정할 수 없게 됩니다. 실제 통장 잔액과 맞는지 확인한 뒤 마감하세요.</p></div>
-  <div class="panel"><h2>통장 대조</h2>${x.reported?`<table class="calc"><tr><th></th><th class="n">원본 엑셀</th><th class="n">프로그램 계산</th></tr>
-  ${[['통장 잔여금',x.reported.bank,c.bank],['시재 잔액',x.reported.cash,c.cash],['총 합계금',x.reported.total,c.total]].map(t=>`<tr><td>${t[0]}</td><td class="n">${fmt(t[1])}</td><td class="n ${t[1]===t[2]?'green':'red'}">${fmt(t[2])} ${t[1]===t[2]?'✓':'✗'}</td></tr>`).join('')}</table>`:`<p class="muted">마감 전에 은행 앱의 실제 잔액과 위 '통장 잔여금'을 비교해 보세요.</p>`}</div></div>`;
+  const per=rooms.map(r=>`<tr><td><b>${r}</b></td><td>${esc(names[r])}</td>${items.map((it,i)=>`<td class="n">${fmt(B?B.per[r].items[i]:0)}</td>`).join('')}<td class="n">${cell(`badj|${r}|v`,(b.adjust||{})[r]||null,1)}</td><td class="n"><b>${fmt(B?B.per[r].total:0)}</b></td></tr>`).join('');
+  return lockBar()+`<h2 class="title">➗ 관리비 나누기 (부과)</h2>
+  <div class="panel"><h3>1. 고지서 금액과 나누는 방법</h3>
+  <p class="muted" style="margin-top:0">· 똑같이 나누기: 모든 집이 같은 금액 · 전기 쓴 만큼: 이번 달 전기 사용량에 따라 · 수도 쓴 만큼: 최근 수도 사용량에 따라<br>· 빼는 집: 빈집 등 나누지 않을 집 호수</p>
+  ${ed?`<div class="bar"><button class="btn s" data-act="bill-add">＋ 항목 추가</button> <span class="muted">반올림</span> <select class="c" data-path="bunit|0|v" ${ed?'':'disabled'}>${[1,10,100].map(u=>`<option value="${u}" ${(b.unit||10)==u?'selected':''}>${u}원 단위</option>`).join('')}</select></div>`:''}
+  <div class="wrap"><table class="t"><thead><tr><th>항목</th><th class="n">고지서 금액</th><th>나누는 방법</th><th>빼는 집</th><th></th></tr></thead><tbody>${itemRows}</tbody>
+  <tfoot><tr class="tot"><td>합계</td><td class="n">${fmt(sum(items.map(i=>i.total)))}</td><td colspan="3"></td></tr></tfoot></table></div></div>
+  <div class="panel"><h3>2. 집마다 낼 관리비 <span class="muted" style="font-size:.9rem;font-weight:400">합계 ${won(B?B.sum:0)}</span></h3>
+  <p class="muted" style="margin-top:0">'더하거나 빼기' 칸에 금액을 넣으면 그 집만 더하거나(+) 뺍니다(−).</p>
+  <div class="wrap"><table class="t"><thead><tr><th>호</th><th>이름</th>${items.map(it=>`<th class="n">${esc(it.name)}</th>`).join('')}<th class="n">더하거나 빼기</th><th class="n">낼 관리비</th></tr></thead><tbody>${per}</tbody>
+  <tfoot><tr class="tot"><td colspan="2">합계</td>${items.map((it,i)=>`<td class="n">${B?fmt(B.itemRes[i].alloc):''}</td>`).join('')}<td class="n">${fmt(sum(Object.values(b.adjust||{})))}</td><td class="n">${B?fmt(B.sum):''}</td></tr></tfoot></table></div></div>`;
 },
 history(){
   const ps=periods(),rooms=P(ps[ps.length-1]).meters.map(r=>r.room);
-  const data=ps.map(p=>{const r=meterRows(p).find(z=>z.room===histRoom);const pay=paidBy(p,histRoom);return {p,r,pay,fin:finActive(p),bill:hasBilling(p)?billing(p).per[histRoom]?.total:null}});
+  const data=ps.map(p=>{const r=meterRows(p).find(z=>z.room===histRoom);return {p,r,pay:paidBy(p,histRoom),fin:finActive(p)}});
   const vals=data.map(d=>d.r&&d.r.e.u>0&&d.r.e.u<1500?d.r.e.u:0),mx=Math.max(1,...vals),W=Math.max(600,ps.length*16);
   const svg=`<svg width="100%" viewBox="0 0 ${W} 150" preserveAspectRatio="none" style="height:150px">${vals.map((v,i)=>`<rect x="${i*(W/ps.length)+2}" y="${130-v/mx*120}" width="${W/ps.length-4}" height="${v/mx*120}" fill="var(--bar)"><title>${label(ps[i])} ${fmt(v)}</title></rect>`).join('')}<line x1="0" y1="130" x2="${W}" y2="130" stroke="var(--line)"/></svg>`;
-  const tot=ps.map(p=>{const r=meterRows(p);return {p,e:sum(r.map(z=>z.e.u)),w:r.some(z=>z.w.u!==null)?sum(r.map(z=>z.w.u)):null,pay:finActive(p)?sum(P(p).payments.map(a=>a.amount)):null,exp:finActive(p)?sum(P(p).expenses.map(a=>a.amount)):null}}).reverse();
-  return `<div class="panel"><h2>호실별 지난 기록 <select id="histRoom" class="btn">${rooms.map(r=>`<option ${r===histRoom?'selected':''}>${r}</option>`).join('')}</select><small>${label(ps[0])} ~ ${label(ps[ps.length-1])} · 원본 엑셀에 없는 달(2021년, 2022년 1~10월, 2023년 12월~2024년 10월)은 빠져 있습니다</small></h2>
-  <div class="muted" style="font-size:12px">전기 사용량 추이 (막대에 마우스를 올리면 값 표시)</div>${svg}
-  <div class="wrap"><table><thead><tr><th>정산월</th><th>입주자</th><th class="n hide-m">전월 전기</th><th class="n hide-m">당월 전기</th><th class="n">전기 사용량</th><th class="n">수도 사용량</th><th class="n">부과액</th><th class="n">입금액</th><th></th></tr></thead><tbody>
-  ${data.slice().reverse().map(d=>d.r?`<tr><td>${label(d.p)}</td><td>${esc(d.r.name)}</td><td class="n hide-m">${fmt(d.r.ep)}</td><td class="n hide-m">${fmt(d.r.ec)}</td><td class="n ${d.r.e.neg||d.r.e.u>1500?'red':''}">${fmt(d.r.e.u)}</td><td class="n">${fmt(d.r.w.u)}</td><td class="n">${d.bill==null?'<span class="muted">—</span>':fmt(d.bill)}</td><td class="n">${d.fin?fmt(d.pay):'<span class="muted">—</span>'}</td><td><button class="btn s" data-act="goto" data-p="${d.p}">열기</button></td></tr>`:'').join('')}</tbody></table></div></div>
-  <div class="panel"><h2>월별 전체 합계</h2><div class="wrap"><table><thead><tr><th>정산월</th><th class="n">전기 사용량</th><th class="n">수도 사용량</th><th class="n">입금 합계</th><th class="n">통장 지출</th><th></th></tr></thead><tbody>
-  ${tot.map(t=>`<tr><td>${label(t.p)}${P(t.p).closed?' '+pill('마감','ok'):''}</td><td class="n">${fmt(t.e)}</td><td class="n">${t.w===null?'<span class="muted">—</span>':fmt(t.w)}</td><td class="n">${t.pay===null?'<span class="muted">—</span>':fmt(t.pay)}</td><td class="n">${t.exp===null?'<span class="muted">—</span>':fmt(t.exp)}</td><td><button class="btn s" data-act="goto" data-p="${t.p}">열기</button></td></tr>`).join('')}</tbody></table></div>
-  <p class="muted">2022년 11월분은 원본 시트의 전월 값이 다른 달과 이어지지 않아 사용량이 비정상으로 나옵니다(원본 그대로 표시).</p></div>`;
+  return `<h2 class="title">📈 지난 기록</h2>
+  <div class="panel"><h3>집 고르기 <select id="histRoom" class="c" style="font-size:1.1rem">${rooms.map(r=>`<option ${r===histRoom?'selected':''}>${r}</option>`).join('')}</select>호</h3>
+  <p class="muted" style="margin-top:0">막대는 달마다 쓴 전기 양입니다 (왼쪽이 오래된 달).</p>${svg}
+  <div class="wrap"><table class="t"><thead><tr><th>달</th><th>이름</th><th class="n">전기 사용</th><th class="n">수도 사용</th><th class="n">낸 관리비</th><th></th></tr></thead><tbody>
+  ${data.slice().reverse().map(d=>d.r?`<tr><td>${label(d.p)}</td><td>${esc(d.r.name)}</td><td class="n">${fmt(d.r.e.u)}</td><td class="n">${fmt(d.r.w.u)}</td><td class="n">${d.fin?fmt(d.pay):'—'}</td><td><button class="btn s" data-act="goto" data-p="${d.p}">보기</button></td></tr>`:'').join('')}</tbody></table></div>
+  <p class="muted">2021년, 2022년 1~10월, 2023년 12월~2024년 10월은 예전 엑셀에 기록이 없어서 빠져 있습니다.</p></div>`;
 },
 logs(){
-  return `<div class="panel"><h2>변경 기록 <small>누가 언제 무엇을 바꿨는지 · 최근 150건 · 각 기록 시점 이전 상태로 되돌릴 수 있습니다</small></h2>
-  <div class="bar"><label class="muted"><input type="checkbox" id="logOnlyCur" ${VIEWS._logCur?'checked':''}> ${label(cur)}만 보기</label></div>
-  <div id="logList"><p class="muted">불러오는 중…</p></div></div>`;
+  return `<h2 class="title">🕘 고친 기록</h2><p class="lead">누가 언제 무엇을 고쳤는지 남아 있습니다. 잘못 고쳤으면 '그 전으로 되돌리기'를 누르세요.</p>
+  <label class="muted" style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><input type="checkbox" id="logOnlyCur" ${VIEWS._logCur?'checked':''} style="width:22px;height:22px"> ${label(cur)}만 보기</label>
+  <div class="panel" id="logList"><p class="muted">불러오는 중…</p></div>`;
 },
 settings(){
   const lb=APPMETA.lastBackup;
-  return `<div class="panel"><h2>백업</h2><p>입력한 내용은 <b>온라인(구글 Firebase)에 바로 저장</b>되고, 고칠 때마다 이전 상태가 <b>변경 기록</b>에 자동 보관됩니다. 그래도 한 달에 한 번은 백업 파일을 내려받아 두세요.</p>
-  <p class="muted">마지막 백업: ${lb?nowStr(lb):'<span class="red">한 번도 안 함</span>'}</p>
-  <div class="bar"><button class="btn p" data-act="backup">백업 파일 내려받기</button><button class="btn" data-act="logout">로그아웃</button>${canWrite?'<button class="btn" data-act="restore">백업 파일로 복원</button>':''}<button class="btn" data-act="exportAll">전체 검침 이력 엑셀</button></div></div>
-  <div class="panel"><h2>계정·관리 정보</h2><table class="calc">
-  <tr><td>사이트 주소</td><td>endbstns620-design.github.io/jeongyeon-web</td></tr>
-  <tr><td>장부 로그인</td><td>pjm0620@naver.com (비밀번호 분실 시 로그인 화면 '비밀번호를 잊었어요')</td></tr>
-  <tr><td>자료 저장소</td><td>Firebase 프로젝트 jeongyeon-settle · 관리 화면은 구글 계정 endbstns620@gmail.com으로 접속</td></tr>
-  <tr><td>사이트 코드</td><td>GitHub endbstns620-design/jeongyeon-web · 바탕화면\\정연지오빌\\jeongyeon-web · GitHub Desktop에서 Commit → Push</td></tr>
-  <tr><td>비용</td><td>0원 (Firebase 무료 요금제 · GitHub Pages)</td></tr></table></div>
-  <div class="panel"><h2>이 프로그램에 대해</h2><ul class="muted" style="line-height:1.8"><li>원본: 2026,2027년 통합 관리비 정산 엑셀 — 검침 2020.01~, 2026년 7월분 입금·지출·미납.</li><li>'2024.10' 시트는 깨진 시트라 제외, '2024.07' 시트는 내용상 2025년 7월이라 2025년 7월로 넣었습니다.</li><li>두 기기에서 같은 달을 동시에 고치면, 늦게 저장한 쪽에 알림이 뜨고 최신 내용으로 다시 불러옵니다.</li></ul></div>`;
+  return `<h2 class="title">⚙ 백업·설정</h2>
+  <div class="panel"><h3>백업 파일 받기</h3><p style="margin-top:0">장부는 인터넷에 자동으로 저장됩니다. 그래도 <b>한 달에 한 번</b> 백업 파일을 받아 두면 더 안전합니다.</p>
+  <p class="muted">마지막으로 받은 날: ${lb?nowStr(lb):'<span class="red">아직 없음</span>'}</p>
+  <button class="btn p full" data-act="backup">백업 파일 받기</button>
+  <div class="bar" style="margin-top:12px"><button class="btn" data-act="exportAll">검침 전체 기록 엑셀</button>${canWrite?'<button class="btn" data-act="restore">백업 파일로 되살리기</button>':''}<button class="btn" data-act="undo">방금 고친 것 되돌리기</button></div></div>
+  <div class="panel"><h3>로그인</h3><p style="margin-top:0">${esc(USER?USER.email:'')} 으로 들어와 있습니다.</p><button class="btn" data-act="logout">로그아웃</button>
+  <p class="muted" style="font-size:.9rem">여러 사람이 쓰는 컴퓨터라면 다 쓰고 꼭 로그아웃하세요.</p></div>
+  <div class="panel"><h3>관리 정보 (도와주는 사람용)</h3><table class="calc" style="font-size:.9rem">
+  <tr><td>사이트</td><td style="font-weight:400;white-space:normal">endbstns620-design.github.io/jeongyeon-web</td></tr>
+  <tr><td>장부 로그인</td><td style="font-weight:400;white-space:normal">pjm0620@naver.com</td></tr>
+  <tr><td>자료 저장</td><td style="font-weight:400;white-space:normal">Firebase jeongyeon-settle (구글 endbstns620@gmail.com)</td></tr>
+  <tr><td>화면 코드</td><td style="font-weight:400;white-space:normal">GitHub endbstns620-design/jeongyeon-web</td></tr>
+  <tr><td>비용</td><td style="font-weight:400">0원</td></tr></table></div>`;
 }};
 async function loadLogs(){
   const el=$('#logList');if(!el)return;
   try{
-    let q=FS.collection('logs').orderBy('atMs','desc').limit(150);
-    const snap=await q.get();let docs=snap.docs.map(d=>({id:d.id,...d.data()}));
+    const snap=await FS.collection('logs').orderBy('atMs','desc').limit(150).get();let docs=snap.docs.map(d=>({id:d.id,...d.data()}));
     if(VIEWS._logCur)docs=docs.filter(d=>d.period===cur);
     if(!$('#logList'))return;
-    $('#logList').innerHTML=docs.length?docs.map(d=>`<div class="log"><div class="h"><b>${label(d.period)}</b><span class="muted">${nowStr(d.atMs)} · ${esc(d.by||'')}</span>${d.versionId&&canWrite?`<button class="btn s" data-act="revert" data-v="${d.versionId}" data-p="${d.period}">이 변경 이전으로 되돌리기</button>`:''}</div><ul>${(d.changes||[]).slice(0,8).map(c=>`<li>${esc(c)}</li>`).join('')}${(d.changes||[]).length>8||d.more?`<li>외 ${((d.changes||[]).length-8>0?(d.changes.length-8):0)+(d.more||0)}건</li>`:''}</ul></div>`).join(''):'<p class="muted">아직 변경 기록이 없습니다. 이 기능을 넣은 뒤부터 기록됩니다.</p>';
-  }catch(e){if($('#logList'))$('#logList').innerHTML=`<p class="red">변경 기록을 불러오지 못했습니다 (${esc(e.code||e.message)}).</p>`}
+    $('#logList').innerHTML=docs.length?docs.map(d=>`<div class="log"><div><b>${label(d.period)}</b> <span class="muted">${nowStr(d.atMs)}</span></div><ul>${(d.changes||[]).slice(0,6).map(c=>`<li>${esc(c)}</li>`).join('')}${(d.changes||[]).length>6?`<li>외 ${d.changes.length-6+(d.more||0)}건</li>`:''}</ul>${d.versionId&&canWrite?`<button class="btn s" style="margin-top:6px" data-act="revert" data-v="${d.versionId}" data-p="${d.period}">그 전으로 되돌리기</button>`:''}</div>`).join(''):'<p class="muted">아직 고친 기록이 없습니다.</p>';
+  }catch(e){if($('#logList'))$('#logList').innerHTML=`<p class="red">기록을 불러오지 못했습니다 (${esc(e.code||e.message)}).</p>`}
 }
-/* ---------- 동작 ---------- */
+/* ---------- 큰 입력창 ---------- */
+tab='home';
+const todayStr=()=>{const d=new Date();return `${String(d.getMonth()+1).padStart(2,'0')}월${String(d.getDate()).padStart(2,'0')}일`};
+function closeSheet(){$('#sheet').hidden=true;$('#sheetBox').innerHTML=''}
+const korMoney=n=>{if(!n)return '';n=Math.round(n);const e=Math.floor(n/1e8),m=Math.floor(n%1e8/1e4),w=n%1e4;return [e?e+'억':'',m?m.toLocaleString('ko-KR')+'만':'',w?w.toLocaleString('ko-KR'):''].filter(Boolean).join(' ')+'원'};
+function openSheet(o){
+  const one=x=>`<label>${x.label}${x.sub?` <small>${x.sub}</small>`:''}
+    <input id="s_${x.k}" class="${x.type==='num'||x.type==='room'?'num':''}" ${x.type==='num'||x.type==='room'?'inputmode="numeric"':''} autocomplete="off" value="${esc(x.type==='num'?fmt(x.v):x.v??'')}" placeholder="${esc(x.ph||'')}">
+    ${x.chips&&x.chips.length?`<span class="chips">${x.chips.map(c=>`<button type="button" data-chip="${x.k}" data-v="${esc(c)}">${esc(c)}</button>`).join('')}</span>`:''}</label>`;
+  const main=o.fields.filter(x=>!x.opt).map(one).join(''),opt=o.fields.filter(x=>x.opt);
+  const optH=opt.length?`<details ${opt.some(x=>x.v)?'open':''}><summary style="cursor:pointer;color:var(--blue);font-size:1rem;padding:6px 0">＋ 더 적을 것 (${opt.map(x=>x.short||x.label).join('·')})</summary><div style="display:grid;gap:14px;margin-top:10px">${opt.map(one).join('')}</div></details>`:'';
+  $('#sheetBox').innerHTML=`<div class="hd"><b>${o.title}</b><button class="btn s" id="sClose">닫기</button></div>${o.top||''}${main}<div class="hint" id="sHint" ${o.hint?'':'hidden'}></div>${optH}
+   <div class="row">${o.del?'<button class="btn d" id="sDel">지우기</button>':'<button class="btn" id="sCancel">취소</button>'}<button class="btn p" id="sSave">${o.saveText||'저장'}</button></div>`;
+  $('#sheet').hidden=false;
+  const vals=()=>Object.fromEntries(o.fields.map(x=>{let v=$('#s_'+x.k).value.trim();if(x.type==='num')v=toNum(v);if(x.type==='date')v=normDate(v);return [x.k,v]}));
+  const upd=()=>{if(o.hint){const h=o.hint(vals());$('#sHint').innerHTML=h||'';$('#sHint').hidden=!h}};
+  o.fields.forEach((x,i)=>{const el=$('#s_'+x.k);el.oninput=upd;el.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();const nx=o.fields[i+1];if(nx)$('#s_'+nx.k).focus();else $('#sSave').click()}}});
+  $('#sheetBox').querySelectorAll('[data-chip]').forEach(b=>b.onclick=()=>{$('#s_'+b.dataset.chip).value=b.dataset.v;upd()});
+  $('#sClose').onclick=closeSheet;if($('#sCancel'))$('#sCancel').onclick=closeSheet;
+  if(o.del)$('#sDel').onclick=async()=>{if(await ask('이 줄을 지울까요?','지우기')){o.del();closeSheet();render();toast('지웠습니다')}};
+  $('#sSave').onclick=()=>{const v=vals();for(const x of o.fields){if(x.type==='num'&&Number.isNaN(v[x.k])){toast(`${x.label}에는 숫자만 넣어 주세요`);$('#s_'+x.k).focus();return}}const r=o.save(v);if(r===false)return;if(!o.keepOpen)closeSheet();render();if(o.done)toast(o.done)};
+  upd();setTimeout(()=>{const first=o.fields.find(x=>!x.v&&x.v!==0)||o.fields[0];$('#s_'+first.k).focus()},60);
+}
+/* 검침: 한 집씩 */
+function meterSheet(i){
+  const rows=meterRows(cur);i=Math.max(0,Math.min(i,rows.length-1));const r=rows[i],water=rows.some(z=>z.wc!=null)||MONTHN(cur)%2===1;
+  const fields=[{k:'ec',label:'이번 달 전기 숫자',sub:`(지난달 ${fmt(r.ep)})`,type:'num',v:r.ec}];
+  if(water)fields.push({k:'wc',label:'이번 수도 숫자',sub:`(지난번 ${fmt(r.wp)})`,type:'num',v:r.wc});
+  fields.push({k:'name',label:'사는 분 이름',sub:'(바뀌었을 때만 고치세요)',type:'text',v:r.name});
+  openSheet({title:`${r.room}호 <span class="muted" style="font-size:1rem;font-weight:400">${i+1} / ${rows.length}</span>`,fields,keepOpen:true,saveText:i<rows.length-1?'저장하고 다음 집 ▶':'저장하고 끝내기',
+    top:i>0?`<button class="btn s" id="sPrevM" style="justify-self:start">◀ 앞 집(${rows[i-1].room}호)으로</button>`:'',
+    hint:v=>{const e=usage(r.ep,v.ec),w=water?usage(r.wp,v.wc):{u:null};if(v.ec==null)return '';return `이번 달 전기 사용: <b>${fmt(e.u)}</b>${e.neg?' <b class="red">← 마이너스! 숫자를 다시 보세요</b>':''}${e.roll?' (계량기 한 바퀴)':''}${water&&v.wc!=null?`<br>수도 사용: <b>${fmt(w.u)}</b>${w.neg?' <b class="red">← 마이너스!</b>':''}`:''}`},
+    save:v=>{const m=P().meters[i];if((m.ec??null)!==v.ec||(water&&(m.wc??null)!==v.wc)||(m.name||'')!==v.name)change(cur,x=>{x.meters[i].ec=v.ec;if(water)x.meters[i].wc=v.wc;x.meters[i].name=v.name});
+      if(i<rows.length-1)setTimeout(()=>meterSheet(i+1),0);else{closeSheet();toast('마지막 집까지 넣었습니다')}}});
+  if($('#sPrevM'))$('#sPrevM').onclick=()=>meterSheet(i-1);
+}
+function paySheet(i){
+  const x=P(),a=i>=0?x.payments[i]:{room:'',payer:'',date:todayStr(),amount:null,note:''},names=Object.fromEntries(x.meters.map(r=>[r.room,r.name]));
+  openSheet({title:i>=0?'들어온 관리비 고치기':'들어온 관리비 넣기',fields:[
+    {k:'room',label:'몇 호',type:'room',v:a.room,ph:'예: 305'},
+    {k:'amount',label:'들어온 금액 (원)',type:'num',v:a.amount},
+    {k:'date',label:'들어온 날짜',type:'date',v:a.date,ph:'예: 8/26',chips:['오늘']},
+    {k:'payer',label:'보낸 사람 이름',sub:'(비워 두면 사는 분 이름)',type:'text',v:a.payer,opt:1,short:'보낸 사람'},
+    {k:'note',label:'메모',type:'text',v:a.note,opt:1}],
+    hint:v=>{const amt=v.amount?`금액: <b>${korMoney(v.amount)}</b>`:'';if(!v.room)return amt;if(!names[v.room])return `<b class="red">${esc(v.room)}호는 없는 호수입니다.</b>`;let h=`<b>${v.room}호 ${esc(names[v.room])}</b>${amt?'<br>'+amt:''}`;
+      if(hasBilling(cur)){const B=billing(cur);h+=` · 이번 달 낼 관리비 ${won(B.per[v.room]?B.per[v.room].total:0)}`}
+      const prev=x.payments.filter((p,j)=>j!==i&&String(p.room)===String(v.room));if(prev.length)h+=`<br>이 집은 이번 달에 이미 ${prev.length}번 (${won(sum(prev.map(p=>p.amount)))}) 넣었습니다.`;return h},
+    save:v=>{if(!v.room||!names[v.room]){toast('호수를 맞게 넣어 주세요');$('#s_room').focus();return false}if(!v.amount){toast('금액을 넣어 주세요');$('#s_amount').focus();return false}
+      const rec={room:v.room,payer:v.payer||names[v.room]||'',date:v.date==='오늘'?todayStr():v.date,amount:v.amount,note:v.note};
+      change(cur,x=>{if(i>=0)x.payments[i]=rec;else x.payments.push(rec)})},
+    done:i>=0?'고쳤습니다':'넣었습니다',del:i>=0?()=>change(cur,x=>x.payments.splice(i,1)):null});
+}
+function expSheet(l,i){
+  const x=P(),a=i>=0?x[l][i]:{date:todayStr(),desc:'',amount:null,note:''};
+  const seen=[];periods().slice(-6).forEach(p=>P(p)[l].forEach(e=>{const d=(e.desc||'').trim();if(d&&!seen.includes(d))seen.push(d)}));
+  openSheet({title:(l==='cash'?'현금(시재)에서 쓴 돈':'통장에서 나간 돈')+(i>=0?' 고치기':' 넣기'),fields:[
+    {k:'desc',label:'어디에 썼나요',type:'text',v:a.desc,ph:'예: 전기요금',chips:seen.slice(0,10)},
+    {k:'amount',label:'금액 (원)',type:'num',v:a.amount},
+    {k:'date',label:'날짜',type:'date',v:a.date,ph:'예: 8/25'},
+    {k:'note',label:'메모',type:'text',v:a.note,opt:1}],
+    hint:v=>v.amount?`금액: <b>${korMoney(v.amount)}</b>`:'',
+    save:v=>{if(!v.desc){toast('어디에 썼는지 넣어 주세요');return false}if(!v.amount){toast('금액을 넣어 주세요');return false}const rec={date:v.date,desc:v.desc,amount:v.amount,note:v.note};change(cur,x=>{if(i>=0)x[l][i]=rec;else x[l].push(rec)})},
+    done:i>=0?'고쳤습니다':'넣었습니다',del:i>=0?()=>change(cur,x=>x[l].splice(i,1)):null});
+}
+function arrSheet(i){
+  const x=P(),a=i>=0?x.arrears[i]:{room:'',name:'',charge:null,lateFee:0,note:''},names=Object.fromEntries(x.meters.map(r=>[r.room,r.name]));
+  openSheet({title:i>=0?'안 낸 집 고치기':'안 낸 집 추가',fields:[
+    {k:'room',label:'몇 호',type:'room',v:a.room},{k:'charge',label:'내야 할 돈 (밀린 돈 포함, 원)',type:'num',v:a.charge},{k:'lateFee',label:'연체료 (원)',sub:'(없으면 0)',type:'num',v:a.lateFee},{k:'note',label:'메모',type:'text',v:a.note}],
+    hint:v=>v.room?(names[v.room]?`${v.room}호 ${esc(names[v.room])} · 이번 달 낸 돈 ${won(paidBy(cur,v.room))}`:'<b class="red">없는 호수입니다</b>'):'',
+    save:v=>{if(!names[v.room]){toast('호수를 맞게 넣어 주세요');return false}const rec={room:v.room,name:names[v.room],charge:v.charge||0,lateFee:v.lateFee||0,note:v.note};change(cur,x=>{if(i>=0)x.arrears[i]=rec;else x.arrears.push(rec)})},
+    done:'저장했습니다',del:i>=0?()=>change(cur,x=>x.arrears.splice(i,1)):null});
+}
+function openingSheet(){
+  const o=opening(cur)||{bank:0,interest:0,cash:0};
+  openSheet({title:'넘어온 돈 고치기',top:'<p class="muted" style="margin:0">보통은 지난달 결산에서 자동으로 들어옵니다. 실제와 다를 때만 고치세요.</p>',fields:[
+    {k:'bank',label:'지난달에서 넘어온 통장 돈 (원)',type:'num',v:o.bank},{k:'interest',label:'이자 (원)',type:'num',v:o.interest||0},{k:'cash',label:'지난달에서 넘어온 현금 (원)',type:'num',v:o.cash}],
+    save:v=>change(cur,x=>x.opening={bank:v.bank||0,interest:v.interest||0,cash:v.cash||0}),done:'고쳤습니다'});
+}
 function nextPeriod(p){let[y,m]=p.split('.').map(Number);m++;if(m>12){m=1;y++}return `${y}.${String(m).padStart(2,'0')}`}
 async function newMonth(){
   if(!canWrite)return;
@@ -638,75 +734,8 @@ async function newMonth(){
   const arrears=hasBilling(last)?[]:L.arrears.filter(a=>arrearLeft(a,last)>0).map(a=>({room:a.room,name:a.name,charge:arrearLeft(a,last),lateFee:0,note:`${label(last)}에서 이월`}));
   S.periods[np]=blank({meters:L.meters.map(r=>({room:r.room,name:r.name,ep:r.ec,ec:null,wp:odd?(lastW[r.room]??null):null,wc:null})),arrears,
     billing:L.billing?{items:(L.billing.items||[]).map(it=>({...it,total:0})),adjust:{},unit:L.billing.unit||10}:null});
-  baseRev[np]=0;markDirty(np,null);cur=np;tab='meters';render();toast(`${label(np)}을 만들었습니다`);
+  baseRev[np]=0;markDirty(np,null);cur=np;tab='home';render();toast(`${label(np)}을 만들었습니다`);
 }
-/* 휴대폰용 한 호실씩 검침 입력 */
-let qi=0;
-function quickOpen(i){
-  const rows=meterRows(cur);qi=Math.max(0,Math.min(i,rows.length-1));const r=rows[qi],odd=rows.some(z=>z.wc!=null)||(+cur.slice(5))%2===1;
-  $('#quick').hidden=false;$('#qPos').textContent=`${label(cur)} · ${qi+1}/${rows.length}`;$('#qRoom').textContent=r.room+'호';$('#qName').textContent=r.name||'';
-  $('#qEp').textContent=`(전월 ${fmt(r.ep)})`;$('#qEc').value=r.ec??'';$('#qWl').hidden=!odd;$('#qWp').textContent=`(이전 ${fmt(r.wp)})`;$('#qWc').value=r.wc??'';
-  const upd=()=>{const e=usage(r.ep,toNum($('#qEc').value)),w=usage(r.wp,toNum($('#qWc').value));$('#qUse').innerHTML=`전기 사용량 <b>${fmt(e.u)}</b>${e.neg?' <span class="red">마이너스!</span>':''}${e.roll?' (한바퀴)':''}${odd?` · 수도 <b>${fmt(w.u)}</b>`:''}`};
-  $('#qEc').oninput=$('#qWc').oninput=upd;upd();setTimeout(()=>$('#qEc').focus(),50);
-}
-function quickSave(){
-  const ec=toNum($('#qEc').value),wc=toNum($('#qWc').value);
-  if(Number.isNaN(ec)||Number.isNaN(wc)){toast('숫자만 입력하세요');return false}
-  const r=P().meters[qi];if((r.ec??null)!==ec||(!$('#qWl').hidden&&(r.wc??null)!==wc))change(cur,x=>{x.meters[qi].ec=ec;if(!$('#qWl').hidden)x.meters[qi].wc=wc});
-  return true;
-}
-$('#qNext').onclick=()=>{if(!quickSave())return;if(qi>=P().meters.length-1){$('#quick').hidden=true;render();toast('마지막 호실까지 입력했습니다');return}quickOpen(qi+1)};
-$('#qPrev').onclick=()=>{if(quickSave())quickOpen(qi-1)};
-$('#qClose').onclick=()=>{quickSave();$('#quick').hidden=true;render()};
-$('#qEc').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();if(!$('#qWl').hidden)$('#qWc').focus();else $('#qNext').click()}};
-$('#qWc').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('#qNext').click()}};
-
-document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-tab],[data-act]');if(!t)return;
-  if(t.dataset.tab){tab=t.dataset.tab;render();window.scrollTo(0,0);return}
-  const a=t.dataset.act;
-  if(a==='unlock'){unlocked[cur]=true;render()}
-  else if(a==='del'){if(await ask('이 줄을 삭제할까요?','삭제')){change(cur,x=>x[t.dataset.list].splice(+t.dataset.i,1));render();toast('삭제했습니다')}}
-  else if(a==='addPay'){change(cur,x=>x.payments.push({room:'',payer:'',date:'',amount:0,note:''}));render()}
-  else if(a==='fillPay'){change(cur,x=>x.payments=x.meters.map(r=>({room:r.room,payer:r.name,date:'',amount:0,note:''})));render()}
-  else if(a==='add'){const l=t.dataset.list;change(cur,x=>x[l].push(l==='arrears'?{room:'',name:'',charge:0,lateFee:0,note:''}:{date:'',desc:'',amount:0,note:''}));render()}
-  else if(a==='copyExp'){const q=prevOf(cur);change(cur,x=>x.expenses=P(q).expenses.map(r=>({date:'',desc:r.desc,amount:0,note:''})));render();toast('지난달 지출 항목을 복사했습니다. 금액을 넣어 주세요')}
-  else if(a==='psort'){VIEWS._psort=t.dataset.v;render()}
-  else if(a==='goto'){cur=t.dataset.p;tab='summary';render();window.scrollTo(0,0)}
-  else if(a==='quick')quickOpen(P().meters.findIndex(r=>r.ec==null)>=0?P().meters.findIndex(r=>r.ec==null):0);
-  else if(a==='bill-start'){change(cur,x=>x.billing={unit:10,adjust:{},items:[{name:'도급비·대행비',total:0,method:'equal',exclude:''},{name:'공용 전기요금',total:0,method:'equal',exclude:''},{name:'세대 전기요금',total:0,method:'elec',exclude:''},{name:'수도요금',total:0,method:'water',exclude:''}]});render();toast('기본 항목을 넣었습니다. 고지서 금액과 나누는 방식을 맞게 고쳐 주세요')}
-  else if(a==='bill-copy'){const ps=periods().filter(p=>p<cur&&P(p).billing&&(P(p).billing.items||[]).length).pop();if(!ps)return tell('복사할 지난달 부과 항목이 없습니다.');change(cur,x=>x.billing={unit:P(ps).billing.unit||10,adjust:{},items:P(ps).billing.items.map(it=>({...it,total:0}))});render();toast(label(ps)+' 항목을 복사했습니다. 금액을 넣어 주세요')}
-  else if(a==='bill-add'){change(cur,x=>x.billing.items.push({name:'',total:0,method:'equal',exclude:''}));render()}
-  else if(a==='bill-del'){if(await ask('이 부과 항목을 삭제할까요?','삭제')){change(cur,x=>x.billing.items.splice(+t.dataset.i,1));render()}}
-  else if(a==='closeMonth'){const c=closing(cur);if(!await ask(`${label(cur)}을 마감할까요?\n\n통장 잔여금 ${won(c.bank)}\n시재 잔액 ${won(c.cash)}\n총 합계금 ${won(c.total)}\n\n마감하면 이 잔액이 다음 달 이월금으로 고정되고, 이 달은 수정할 수 없습니다.`,'마감'))return;
-    change(cur,x=>x.closed={atMs:Date.now(),by:USER?USER.email:'',bank:c.bank,cash:c.cash,total:c.total});render();toast('마감했습니다')}
-  else if(a==='reopen'){if(!await ask(`${label(cur)} 마감을 해제할까요?\n\n해제하면 이 달을 고칠 수 있고, 고친 내용에 따라 다음 달 이월금이 다시 바뀝니다. 해제 기록은 변경 기록에 남습니다.`,'마감 해제'))return;
-    change(cur,x=>x.closed=null);unlocked[cur]=true;render();toast('마감을 해제했습니다')}
-  else if(a==='revert'){
-    const p=t.dataset.p;if(!await ask(`${label(p)}을 이 변경이 일어나기 직전 상태로 되돌릴까요?\n(지금 상태도 변경 기록에 남으므로 다시 되돌릴 수 있습니다)`,'되돌리기'))return;
-    try{const v=await FS.collection('versions').doc(t.dataset.v).get();if(!v.exists)return tell('보관된 이전 상태를 찾지 못했습니다.');
-      const before=S.periods[p]?clone(S.periods[p]):null;S.periods[p]=blank(v.data().data);markDirty(p,before,{reason:`변경 기록에서 되돌림 (${nowStr(v.data().atMs)} 이전 상태)`});cur=p;tab='summary';render();toast('되돌렸습니다')}
-    catch(err){tell('되돌리지 못했습니다: '+(err.code||err.message))}}
-  else if(a==='backup')backup();
-  else if(a==='logout')$('#logout').click();
-  else if(a==='restore')$('#restoreFile').click();
-  else if(a==='exportAll')exportAll();
-});
-document.addEventListener('change',e=>{
-  if(e.target.id==='period'){cur=e.target.value;render()}
-  if(e.target.id==='histRoom'){histRoom=e.target.value;render()}
-  if(e.target.id==='logOnlyCur'){VIEWS._logCur=e.target.checked;loadLogs()}
-  if(e.target.id==='memo'){const v=e.target.value;change(cur,x=>x.memo=v);toast('메모를 저장했습니다')}
-  if(e.target.id==='restoreFile'){const f=e.target.files[0];e.target.value='';if(f)restore(f)}
-});
-$('#newMonth').onclick=newMonth;
-$('#exportX').onclick=exportMonth;
-$('#undo').onclick=async()=>{
-  const u=undoStack.pop();if(!u)return toast('이번 접속에서 되돌릴 변경이 없습니다');
-  const before=S.periods[u.p]?clone(S.periods[u.p]):null;
-  if(u.doc)S.periods[u.p]=u.doc; else delete S.periods[u.p];
-  if(!(u.p in dirtyBase))dirtyBase[u.p]=before;pending[u.p]={reason:'되돌리기'};clearTimeout(timers[u.p]);timers[u.p]=setTimeout(()=>flush(u.p),50);render();toast(`${label(u.p)} 변경을 되돌렸습니다`);
-};
 async function saveFile(filename,data){
   try{const blob=data instanceof Blob?data:new Blob([data]);const u=URL.createObjectURL(blob),el=document.createElement('a');el.href=u;el.download=filename;document.body.appendChild(el);el.click();setTimeout(()=>{el.remove();URL.revokeObjectURL(u)},3000);return true}
   catch(e){tell('파일을 내려받지 못했습니다: '+e.message);return false}
@@ -757,6 +786,54 @@ function exportAll(){
   const Wt=[head,...ps.map(p=>{const m=meterRows(p);if(!m.some(z=>z.w.u!==null))return null;return [label(p),...rooms.map(r=>{const z=m.find(q=>q.room===r);return z?z.w.u:null})]}).filter(Boolean)];
   XLSX.utils.book_append_sheet(wb,ws(E,[14]),'전기 사용량');XLSX.utils.book_append_sheet(wb,ws(Wt,[14]),'수도 사용량');
   XLSX.writeFile(wb,`정연지오빌1_검침이력_${ps[0]}-${ps[ps.length-1]}.xlsx`);toast('엑셀 파일을 내려받았습니다');
+}
+
+document.addEventListener('click',async e=>{
+  const g=e.target.closest('[data-go]');if(g){tab=g.dataset.go;render();window.scrollTo(0,0);return}
+  const t=e.target.closest('[data-act]');if(!t)return;
+  const a=t.dataset.act;
+  if(a==='unlock'){unlocked[cur]=true;render()}
+  else if(a==='meter')meterSheet(+t.dataset.i);
+  else if(a==='pay')paySheet(+t.dataset.i);
+  else if(a==='exp')expSheet(t.dataset.l,+t.dataset.i);
+  else if(a==='arr')arrSheet(+t.dataset.i);
+  else if(a==='editOpening')openingSheet();
+  else if(a==='newMonth')newMonth();
+  else if(a==='exportX')exportMonth();
+  else if(a==='goto'){cur=t.dataset.p;tab='home';render();window.scrollTo(0,0)}
+  else if(a==='bill-start'){change(cur,x=>x.billing={unit:10,adjust:{},items:[{name:'용역비(도급비)',total:0,method:'equal',exclude:''},{name:'공용 전기요금',total:0,method:'equal',exclude:''},{name:'세대 전기요금',total:0,method:'elec',exclude:''},{name:'수도요금',total:0,method:'water',exclude:''}]});render();toast('기본 항목을 넣었습니다. 고지서 금액을 넣어 주세요')}
+  else if(a==='bill-copy'){const ps=periods().filter(p=>p<cur&&P(p).billing&&(P(p).billing.items||[]).length).pop();if(!ps)return tell('가져올 지난달 항목이 없습니다.');change(cur,x=>x.billing={unit:P(ps).billing.unit||10,adjust:{},items:P(ps).billing.items.map(it=>({...it,total:0}))});render();toast('지난달 항목을 가져왔습니다. 금액을 넣어 주세요')}
+  else if(a==='bill-add'){change(cur,x=>x.billing.items.push({name:'',total:0,method:'equal',exclude:''}));render()}
+  else if(a==='bill-del'){if(await ask('이 항목을 지울까요?','지우기')){change(cur,x=>x.billing.items.splice(+t.dataset.i,1));render()}}
+  else if(a==='closeMonth'){const c=closing(cur);if(!await ask(`${label(cur)}을 마감할까요?\n\n통장에 남은 돈 ${won(c.bank)}\n현금 남은 돈 ${won(c.cash)}\n\n이 숫자가 다음 달로 넘어가고, 이 달은 잠깁니다.`,'마감하기'))return;
+    change(cur,x=>x.closed={atMs:Date.now(),by:USER?USER.email:'',bank:c.bank,cash:c.cash,total:c.total});render();toast('마감했습니다')}
+  else if(a==='reopen'){if(!await ask(`${label(cur)} 마감을 풀까요?\n\n풀면 이 달을 다시 고칠 수 있고, 다음 달로 넘어가는 돈도 다시 계산됩니다.`,'마감 풀기'))return;
+    change(cur,x=>x.closed=null);unlocked[cur]=true;render();toast('마감을 풀었습니다')}
+  else if(a==='revert'){
+    const p=t.dataset.p;if(!await ask(`${label(p)}을 이렇게 고치기 바로 전 상태로 되돌릴까요?\n(지금 상태도 기록에 남아서 다시 되돌릴 수 있습니다)`,'되돌리기'))return;
+    try{const v=await FS.collection('versions').doc(t.dataset.v).get();if(!v.exists)return tell('예전 상태를 찾지 못했습니다.');
+      const before=S.periods[p]?clone(S.periods[p]):null;S.periods[p]=blank(v.data().data);markDirty(p,before,{reason:`고친 기록에서 되돌림 (${nowStr(v.data().atMs)} 전 상태)`});cur=p;tab='home';render();toast('되돌렸습니다')}
+    catch(err){tell('되돌리지 못했습니다: '+(err.code||err.message))}}
+  else if(a==='backup')backup();
+  else if(a==='restore')$('#restoreFile').click();
+  else if(a==='exportAll')exportAll();
+  else if(a==='logout')$('#logout').click();
+  else if(a==='undo')doUndo();
+});
+document.addEventListener('change',e=>{
+  if(e.target.id==='histRoom'){histRoom=e.target.value;render()}
+  if(e.target.id==='logOnlyCur'){VIEWS._logCur=e.target.checked;loadLogs()}
+  if(e.target.id==='memo'){const v=e.target.value;change(cur,x=>x.memo=v);toast('메모를 저장했습니다')}
+  if(e.target.id==='restoreFile'){const f=e.target.files[0];e.target.value='';if(f)restore(f)}
+});
+$('#mPrev').onclick=()=>{const ps=periods(),i=ps.indexOf(cur);if(i>0){cur=ps[i-1];render()}};
+$('#mNext').onclick=()=>{const ps=periods(),i=ps.indexOf(cur);if(i<ps.length-1){cur=ps[i+1];render()}};
+$('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet')closeSheet()});
+function doUndo(){
+  const u=undoStack.pop();if(!u)return toast('이번에 들어와서 고친 것이 없습니다');
+  const before=S.periods[u.p]?clone(S.periods[u.p]):null;
+  if(u.doc)S.periods[u.p]=u.doc; else delete S.periods[u.p];
+  if(!(u.p in dirtyBase))dirtyBase[u.p]=before;pending[u.p]={reason:'되돌리기'};clearTimeout(timers[u.p]);timers[u.p]=setTimeout(()=>flush(u.p),50);render();toast('방금 고친 것을 되돌렸습니다');
 }
 boot();
 </script>
