@@ -82,7 +82,21 @@ select.c{font:inherit;color:var(--fg);background:var(--input);border:1px solid v
 .closed{background:var(--greenbg);color:var(--green);padding:8px 12px;border-radius:6px;margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .log{border-bottom:1px solid var(--line);padding:8px 0}.log .h{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:13px}.log ul{margin:4px 0 0;padding-left:18px;font-size:13px;color:var(--muted)}
 .neg{color:var(--blue)}
-@media(max-width:600px){header h1{font-size:15px}th,td{padding:5px 6px}input.c{min-width:60px}.hide-m{display:none}}
+header .s{display:none}
+@media(max-width:600px){
+ header{position:static;padding:8px 12px;gap:6px}
+ header h1{font-size:14px;margin:0;flex:1}
+ header .sp,#who,#logout,header .l{display:none}
+ header .s{display:inline}
+ header label{flex:1 1 100%;display:flex;align-items:center;gap:6px;font-size:13px;order:3}
+ header label select{flex:1}
+ #newMonth,#exportX,#undo{order:4;flex:1;padding:6px 4px;font-size:13px}
+ .sync{order:2;font-size:11px}
+ nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;padding:0 4px}
+ nav button{padding:10px 9px;font-size:13px}
+ main{padding-inline:10px}
+ .wrap{max-height:none}
+th,td{padding:5px 6px}input.c{min-width:60px}.hide-m{display:none}}
 #modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:30;padding:16px}
 #modal .box{background:var(--surface);color:var(--fg);border-radius:10px;padding:20px;max-width:440px;width:100%;white-space:pre-line}
 #modal .row{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
@@ -115,13 +129,13 @@ select.c{font:inherit;color:var(--fg);background:var(--input);border:1px solid v
 <header>
   <h1>정연지오빌1 관리비 정산</h1>
   <label>정산월 <select id="period"></select></label>
-  <button id="newMonth">+ 새 달 만들기</button>
-  <button id="exportX">엑셀로 내보내기</button>
+  <button id="newMonth"><span class="l">+ 새 달 만들기</span><span class="s">+ 새 달</span></button>
+  <button id="exportX"><span class="l">엑셀로 내보내기</span><span class="s">엑셀</span></button>
   <span class="sp"></span>
   <span class="sync" id="sync">연결 중…</span>
   <span id="who"></span>
   <button id="logout">로그아웃</button>
-  <button id="undo" title="이번 접속에서 마지막으로 바꾼 내용을 되돌립니다">↶ 되돌리기</button>
+  <button id="undo" title="이번 접속에서 마지막으로 바꾼 내용을 되돌립니다" aria-label="되돌리기">↶<span class="l"> 되돌리기</span></button>
 </header>
 <nav id="tabs"></nav>
 <main id="main"><div class="empty">관리비 자료를 불러오는 중입니다…</div></main>
@@ -178,7 +192,7 @@ const dateKey=s=>{const m=String(s||'').match(/(\d{1,2})\D+(\d{1,2})/);return m?
 const LISTN={payments:'입금',expenses:'통장 지출',cash:'시재 지출',arrears:'미납'};
 const FIELDN={room:'호실',payer:'입금자',date:'날짜',amount:'금액',note:'비고',desc:'내용',name:'이름',charge:'부과액',lateFee:'연체료',ep:'전월 전기',ec:'당월 전기',wp:'이전 수도',wc:'당월 수도',bank:'통장 이월금',interest:'이자',cash:'시재 이월금',total:'총액',method:'배분방식',exclude:'제외 호실'};
 const sv=v=>v===null||v===undefined||v===''?'(빈칸)':typeof v==='number'?fmt(v):String(v);
-function rowLabel(l,o){return o.room?`${o.room}호`:(o.desc||o.name||'')}
+function rowLabel(l,o){return (o.room?`${o.room}호`:(o.desc||o.name||''))+(o.charge!==undefined&&o.amount===undefined?` ${fmt(o.charge)}원`:'')}
 function diffPeriod(a,b){
   a=a||{};b=b||{};const out=[];
   if(!a.meters&&b.meters){out.push('새 달 생성');return out}
@@ -593,7 +607,7 @@ settings(){
   const lb=APPMETA.lastBackup;
   return `<div class="panel"><h2>백업</h2><p>입력한 내용은 <b>온라인(구글 Firebase)에 바로 저장</b>되고, 고칠 때마다 이전 상태가 <b>변경 기록</b>에 자동 보관됩니다. 그래도 한 달에 한 번은 백업 파일을 내려받아 두세요.</p>
   <p class="muted">마지막 백업: ${lb?nowStr(lb):'<span class="red">한 번도 안 함</span>'}</p>
-  <div class="bar"><button class="btn p" data-act="backup">백업 파일 내려받기</button>${canWrite?'<button class="btn" data-act="restore">백업 파일로 복원</button>':''}<button class="btn" data-act="exportAll">전체 검침 이력 엑셀</button></div></div>
+  <div class="bar"><button class="btn p" data-act="backup">백업 파일 내려받기</button><button class="btn" data-act="logout">로그아웃</button>${canWrite?'<button class="btn" data-act="restore">백업 파일로 복원</button>':''}<button class="btn" data-act="exportAll">전체 검침 이력 엑셀</button></div></div>
   <div class="panel"><h2>계정·관리 정보</h2><table class="calc">
   <tr><td>사이트 주소</td><td>endbstns620-design.github.io/jeongyeon-web</td></tr>
   <tr><td>장부 로그인</td><td>pjm0620@naver.com (비밀번호 분실 시 로그인 화면 '비밀번호를 잊었어요')</td></tr>
@@ -674,6 +688,7 @@ document.addEventListener('click',async e=>{
       const before=S.periods[p]?clone(S.periods[p]):null;S.periods[p]=blank(v.data().data);markDirty(p,before,{reason:`변경 기록에서 되돌림 (${nowStr(v.data().atMs)} 이전 상태)`});cur=p;tab='summary';render();toast('되돌렸습니다')}
     catch(err){tell('되돌리지 못했습니다: '+(err.code||err.message))}}
   else if(a==='backup')backup();
+  else if(a==='logout')$('#logout').click();
   else if(a==='restore')$('#restoreFile').click();
   else if(a==='exportAll')exportAll();
 });
