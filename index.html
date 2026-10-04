@@ -71,6 +71,18 @@ input.c[readonly]{background:transparent;border-color:transparent;outline:none}
 .calc td{padding:8px}.calc td:first-child{color:var(--muted)}
 #toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:8px;z-index:20;max-width:90vw}
 textarea{font:inherit;color:var(--fg);background:var(--surface);width:100%;min-height:70px;padding:8px;border:1px solid var(--line);border-radius:6px}
+select.c{font:inherit;color:var(--fg);background:var(--input);border:1px solid var(--inputline);border-radius:4px;padding:3px 4px}
+#quick{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;z-index:25;padding:0}
+#quick .qbox{background:var(--surface);color:var(--fg);width:100%;max-width:480px;border-radius:14px 14px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));display:grid;gap:12px}
+#quick .qtop{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:13px}
+#quick .qroom{font-size:22px}#quick .qroom b{font-size:30px;margin-right:8px}
+#quick label{min-width:0;display:grid;gap:4px;font-size:14px;color:var(--muted)}
+#quick input{width:100%;min-width:0;font:inherit;font-size:26px;padding:10px 12px;border:2px solid var(--inputline);border-radius:8px;background:var(--input);color:var(--fg);text-align:right;font-variant-numeric:tabular-nums}
+#quick .row{display:grid;grid-template-columns:1fr 2fr;gap:8px}#quick .row .btn{padding:12px;font-size:16px}
+.closed{background:var(--greenbg);color:var(--green);padding:8px 12px;border-radius:6px;margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.log{border-bottom:1px solid var(--line);padding:8px 0}.log .h{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:13px}.log ul{margin:4px 0 0;padding-left:18px;font-size:13px;color:var(--muted)}
+.neg{color:var(--blue)}
+@media(max-width:600px){header h1{font-size:15px}th,td{padding:5px 6px}input.c{min-width:60px}.hide-m{display:none}}
 #modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:30;padding:16px}
 #modal .box{background:var(--surface);color:var(--fg);border-radius:10px;padding:20px;max-width:440px;width:100%;white-space:pre-line}
 #modal .row{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
@@ -95,7 +107,7 @@ textarea{font:inherit;color:var(--fg);background:var(--surface);width:100%;min-h
     <label>이메일<input id="email" type="email" autocomplete="username" required></label>
     <label>비밀번호<input id="pw" type="password" autocomplete="current-password" minlength="6" required></label>
     <button class="btn p" id="loginBtn" type="submit">로그인</button>
-    <div class="links"><button class="linkbtn" id="signupBtn" type="submit">처음 계정 만들기</button><button class="linkbtn" id="resetBtn" type="button">비밀번호를 잊었어요</button></div>
+    <div class="links"><span class="muted" style="font-size:12px">계정은 관리자만 만들 수 있습니다</span><button class="linkbtn" id="resetBtn" type="button">비밀번호를 잊었어요</button></div>
     <div id="loginMsg" role="status"></div>
   </form>
 </div>
@@ -117,16 +129,24 @@ textarea{font:inherit;color:var(--fg);background:var(--surface);width:100%;min-h
 <div id="toast" hidden></div>
 <div id="modal" hidden><div class="box"><div id="modalMsg"></div><div class="row"><button class="btn" id="modalNo">취소</button><button class="btn p" id="modalYes">확인</button></div></div></div>
 <input type="file" id="restoreFile" accept=".json" hidden>
+<div id="quick" hidden><div class="qbox">
+  <div class="qtop"><span id="qPos"></span><button class="btn s" id="qClose">닫기</button></div>
+  <div class="qroom"><b id="qRoom"></b> <span id="qName"></span></div>
+  <label>당월 전기 <small id="qEp"></small><input id="qEc" inputmode="numeric" autocomplete="off"></label>
+  <label id="qWl">당월 수도 <small id="qWp"></small><input id="qWc" inputmode="numeric" autocomplete="off"></label>
+  <div id="qUse" class="muted"></div>
+  <div class="row"><button class="btn" id="qPrev">◀ 이전</button><button class="btn p" id="qNext">저장 후 다음 ▶</button></div>
+</div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js"></script>
+<script src="firebase-config.js?v=4"></script>
 <script>
 'use strict';
 const ROOMS_FLOORS=[2,3,4,5,6];
-let S={periods:{}}, cur=null, tab='summary', unlocked={}, histRoom='201', FS=null, ready=false, canWrite=true, unsub=null;
-const undoStack=[];
+let S={periods:{}}, META={}, cur=null, tab='summary', unlocked={}, histRoom='201', FS=null, ready=false, canWrite=true, unsub=null, USER=null, APPMETA={};
+const undoStack=[], baseRev={}, dirtyBase={};
 const $=s=>document.querySelector(s);
 const fmt=v=>v===null||v===undefined||v===''||isNaN(v)?'':Math.round(v).toLocaleString('ko-KR');
 const won=v=>v===null||v===undefined?'—':fmt(v)+'원';
@@ -134,98 +154,150 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const toNum=s=>{if(s===null||s===undefined)return null;s=String(s).replace(/[,\s원]/g,'');if(s==='')return null;const n=Number(s);return isNaN(n)?NaN:n};
 const label=p=>{const[y,m]=p.split('.');return `${y}년 ${+m}월분`};
 const sum=a=>a.reduce((x,y)=>x+(+y||0),0);
-const clone=o=>JSON.parse(JSON.stringify(o));
-function toast(t){const e=$('#toast');e.textContent=t;e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>e.hidden=true,2600)}
+const clone=o=>o===undefined?undefined:JSON.parse(JSON.stringify(o));
+const nowStr=ms=>new Date(ms).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+function toast(t){const e=$('#toast');e.textContent=t;e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>e.hidden=true,3200)}
 function ask(msg,yes='확인',onlyOk=false){return new Promise(res=>{$('#modalMsg').textContent=msg;$('#modalYes').textContent=yes;$('#modalNo').hidden=onlyOk;$('#modal').hidden=false;
   const done=v=>{$('#modal').hidden=true;$('#modalYes').onclick=$('#modalNo').onclick=null;res(v)};$('#modalYes').onclick=()=>done(true);$('#modalNo').onclick=()=>done(false);$('#modalYes').focus()})}
 const tell=msg=>ask(msg,'확인',true);
 function setSync(t){$('#sync').textContent=t}
+const META_KEYS=['rev','updatedAt','updatedBy','updatedAtMs'];
+function blank(p){p=p||{};const o=Object.assign({meters:[],payments:[],expenses:[],cash:[],arrears:[],opening:null,memo:'',billing:null,closed:null},p);META_KEYS.forEach(k=>delete o[k]);return o}
 
-/* ---------- 저장 (Firebase Firestore) ---------- */
+/* ---------- 날짜 정리: 8/26, 0826, 08월26일, 2026-08-26 → 08월26일 ---------- */
+function normDate(s){
+  s=String(s||'').trim();if(!s)return '';
+  let m=s.match(/^(?:\d{4}[-./])?(\d{1,2})[-./월\s]+(\d{1,2})일?$/)||s.match(/^(\d{2})(\d{2})$/);
+  if(m){const mm=+m[1],dd=+m[2];if(mm>=1&&mm<=12&&dd>=1&&dd<=31)return `${String(mm).padStart(2,'0')}월${String(dd).padStart(2,'0')}일`}
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})T/);if(m)return `${m[2]}월${m[3]}일`;
+  return s;
+}
+const dateKey=s=>{const m=String(s||'').match(/(\d{1,2})\D+(\d{1,2})/);return m?(+m[1])*100+(+m[2]):9999};
+
+/* ---------- 변경 내용 요약 ---------- */
+const LISTN={payments:'입금',expenses:'통장 지출',cash:'시재 지출',arrears:'미납'};
+const FIELDN={room:'호실',payer:'입금자',date:'날짜',amount:'금액',note:'비고',desc:'내용',name:'이름',charge:'부과액',lateFee:'연체료',ep:'전월 전기',ec:'당월 전기',wp:'이전 수도',wc:'당월 수도',bank:'통장 이월금',interest:'이자',cash:'시재 이월금',total:'총액',method:'배분방식',exclude:'제외 호실'};
+const sv=v=>v===null||v===undefined||v===''?'(빈칸)':typeof v==='number'?fmt(v):String(v);
+function rowLabel(l,o){return o.room?`${o.room}호`:(o.desc||o.name||'')}
+function diffPeriod(a,b){
+  a=a||{};b=b||{};const out=[];
+  if(!a.meters&&b.meters){out.push('새 달 생성');return out}
+  if(a.meters&&!b.meters){out.push('달 삭제');return out}
+  const am=Object.fromEntries((a.meters||[]).map(r=>[r.room,r]));
+  for(const r of b.meters||[]){const o=am[r.room]||{};for(const f of ['name','ep','ec','wp','wc'])if((o[f]??null)!==(r[f]??null))out.push(`검침 ${r.room}호 ${FIELDN[f]}: ${sv(o[f])} → ${sv(r[f])}`)}
+  for(const l of Object.keys(LISTN)){
+    const A=a[l]||[],B=b[l]||[];
+    if(A.length===B.length){B.forEach((r,i)=>{const o=A[i]||{};for(const f of Object.keys(r))if(JSON.stringify(o[f])!==JSON.stringify(r[f]))out.push(`${LISTN[l]} ${i+1}번째 줄(${rowLabel(l,r)}) ${FIELDN[f]||f}: ${sv(o[f])} → ${sv(r[f])}`)})}
+    else{const ka=A.map(x=>JSON.stringify(x)),kb=B.map(x=>JSON.stringify(x));
+      B.forEach((r,i)=>{if(!ka.includes(kb[i]))out.push(`${LISTN[l]} 추가/수정: ${rowLabel(l,r)} ${r.amount!==undefined?fmt(r.amount)+'원':''}`)});
+      A.forEach((r,i)=>{if(!kb.includes(ka[i]))out.push(`${LISTN[l]} 삭제: ${rowLabel(l,r)} ${r.amount!==undefined?fmt(r.amount)+'원':''}`)})}
+  }
+  if(JSON.stringify(a.opening)!==JSON.stringify(b.opening)){const o=a.opening||{},n=b.opening||{};for(const f of ['bank','interest','cash'])if((o[f]??null)!==(n[f]??null))out.push(`이월금 ${FIELDN[f]}: ${sv(o[f])} → ${sv(n[f])}`)}
+  if(JSON.stringify(a.billing)!==JSON.stringify(b.billing)){
+    const A=(a.billing||{}).items||[],B=(b.billing||{}).items||[];
+    if(A.length!==B.length)out.push(`부과 항목 ${A.length}개 → ${B.length}개`);
+    B.forEach((r,i)=>{const o=A[i]||{};for(const f of ['name','total','method','exclude'])if(JSON.stringify(o[f])!==JSON.stringify(r[f]))out.push(`부과 항목 ${i+1}(${r.name||''}) ${FIELDN[f]||f}: ${sv(o[f])} → ${sv(r[f])}`)});
+    const aa=(a.billing||{}).adjust||{},ba=(b.billing||{}).adjust||{};
+    new Set([...Object.keys(aa),...Object.keys(ba)]).forEach(k=>{if((aa[k]??null)!==(ba[k]??null))out.push(`부과 개별 조정 ${k}호: ${sv(aa[k])} → ${sv(ba[k])}`)});
+    if(((a.billing||{}).unit)!==((b.billing||{}).unit))out.push('부과 반올림 단위 변경');
+  }
+  if(JSON.stringify(a.closed)!==JSON.stringify(b.closed))out.push(b.closed?'월 마감':'월 마감 해제');
+  if((a.memo||'')!==(b.memo||''))out.push('메모 수정');
+  return out;
+}
+
+/* ---------- 저장 (Firestore, 충돌 감지) ---------- */
 const pending={}, writing={}, timers={};
-function blank(p){return Object.assign({meters:[],payments:[],expenses:[],cash:[],arrears:[],opening:null,memo:''},p||{})}
-function markDirty(p,before){
+const anyPending=()=>Object.values(pending).some(Boolean)||Object.values(writing).some(Boolean);
+function markDirty(p,before,opt){
   undoStack.push({p,doc:before});if(undoStack.length>30)undoStack.shift();
-  pending[p]=true;setSync('저장 중…');clearTimeout(timers[p]);timers[p]=setTimeout(()=>flush(p),400);
+  if(!(p in dirtyBase))dirtyBase[p]=before===null?null:clone(before);
+  pending[p]=opt||true;setSync('저장 중…');clearTimeout(timers[p]);timers[p]=setTimeout(()=>flush(p),400);
 }
 async function flush(p){
   if(!FS)return;
   if(writing[p]){timers[p]=setTimeout(()=>flush(p),300);return}
+  const opt=typeof pending[p]==='object'?pending[p]:{};
   writing[p]=true;pending[p]=false;
+  const data=S.periods[p]?clone(S.periods[p]):null, before=dirtyBase[p], ref=FS.collection('periods').doc(p);
+  const changes=opt.reason?[opt.reason,...diffPeriod(before,data)]:diffPeriod(before,data);
   try{
-    const d=S.periods[p],ref=FS.collection('periods').doc(p);
-    if(d)await ref.set(clone(d)); else await ref.delete();
-    if(!Object.values(pending).some(Boolean))setSync('저장됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}));
+    const newRev=await FS.runTransaction(async tx=>{
+      const snap=await tx.get(ref);
+      const remoteRev=snap.exists?(snap.data().rev||0):0, expect=baseRev[p]||0;
+      if(!opt.force&&snap.exists&&remoteRev!==expect){const e=new Error('conflict');e.code='conflict';e.remote=snap.data();throw e}
+      if(!opt.force&&!snap.exists&&expect>0){const e=new Error('conflict');e.code='conflict';e.remote=null;throw e}
+      const ms=Date.now(), by=USER?USER.email:'';
+      let vid=null;
+      if(snap.exists){const vref=FS.collection('versions').doc();vid=vref.id;const old=snap.data();tx.set(vref,{period:p,rev:remoteRev,atMs:ms,by,data:blank(old)})}
+      if(data)tx.set(ref,Object.assign(data,{rev:remoteRev+1,updatedAtMs:ms,updatedBy:by}));else tx.delete(ref);
+      tx.set(FS.collection('logs').doc(),{period:p,atMs:ms,by,rev:remoteRev+1,versionId:vid,changes:changes.slice(0,40),more:Math.max(0,changes.length-40)});
+      return data?remoteRev+1:0;
+    });
+    baseRev[p]=newRev;if(!pending[p])delete dirtyBase[p];
+    if(!anyPending())setSync('저장됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}));
   }catch(e){
-    pending[p]=true;
-    if(e.code==='permission-denied'){canWrite=false;setSync('권한 없음');tell('이 계정은 저장 권한이 없습니다. 허용된 이메일로 로그인했는지 확인하세요.');render()}
-    else{setSync('저장 실패 — 다시 시도 중');setTimeout(()=>flush(p),2000+Math.random()*1000)}
+    if(e.code==='conflict'){
+      const lost=diffPeriod(before,data);
+      if(e.remote){S.periods[p]=blank(clone(e.remote));baseRev[p]=e.remote.rev||0}else{delete S.periods[p];baseRev[p]=0}
+      delete dirtyBase[p];pending[p]=false;setSync('다른 기기 내용으로 갱신됨');render();
+      tell(`${label(p)}을 다른 기기(또는 다른 창)에서 먼저 고쳐서, 방금 입력한 내용은 저장하지 않고 최신 내용을 불러왔습니다.\n\n저장되지 않은 내용:\n· ${lost.slice(0,8).join('\n· ')||'(없음)'}${lost.length>8?`\n· 외 ${lost.length-8}건`:''}\n\n필요하면 다시 입력해 주세요.`);
+    }else if(e.code==='permission-denied'){canWrite=false;pending[p]=false;setSync('권한 없음');tell('이 계정은 저장 권한이 없습니다.');render()}
+    else{pending[p]=opt;setSync('저장 실패 — 다시 시도 중 (인터넷 확인)');setTimeout(()=>flush(p),2500+Math.random()*1500)}
   }finally{writing[p]=false}
 }
-window.addEventListener('beforeunload',e=>{if(Object.values(pending).some(Boolean)){e.preventDefault();e.returnValue=''}});
-function change(p,fn){const before=S.periods[p]?clone(S.periods[p]):null;fn(S.periods[p]);markDirty(p,before)}
+window.addEventListener('beforeunload',e=>{if(anyPending()){e.preventDefault();e.returnValue=''}});
+function change(p,fn,opt){const before=S.periods[p]?clone(S.periods[p]):null;fn(S.periods[p]);markDirty(p,before,opt)}
+async function saveMeta(patch){Object.assign(APPMETA,patch);try{await FS.collection('meta').doc('app').set(APPMETA,{merge:true})}catch(e){}}
 
 /* ---------- 로그인 ---------- */
-function showLogin(msg){
-  $('#app').hidden=true;$('#login').hidden=false;
-  $('#loginMsg').textContent=msg||'';
-}
+function showLogin(msg){$('#app').hidden=true;$('#login').hidden=false;$('#loginMsg').textContent=msg||''}
 async function doLogin(e){
   e.preventDefault();
-  const em=$('#email').value.trim(),pw=$('#pw').value,signup=e.submitter&&e.submitter.id==='signupBtn';
-  if(!em||pw.length<6)return $('#loginMsg').textContent='이메일과 6자 이상 비밀번호를 입력하세요.';
-  $('#loginMsg').textContent=signup?'계정을 만드는 중…':'로그인 중…';
-  try{
-    if(signup){const c=await firebase.auth().createUserWithEmailAndPassword(em,pw);await c.user.sendEmailVerification()}
-    else await firebase.auth().signInWithEmailAndPassword(em,pw);
-  }catch(err){
-    const m={'auth/invalid-credential':'이메일 또는 비밀번호가 맞지 않습니다.','auth/wrong-password':'비밀번호가 맞지 않습니다.','auth/user-not-found':'등록되지 않은 이메일입니다. 처음이면 \'처음 계정 만들기\'를 누르세요.','auth/email-already-in-use':'이미 만든 계정입니다. \'로그인\'을 누르세요.','auth/too-many-requests':'시도가 너무 많습니다. 잠시 후 다시 해 주세요.','auth/network-request-failed':'인터넷 연결을 확인하세요.','auth/weak-password':'비밀번호는 6자 이상이어야 합니다.','auth/invalid-email':'이메일 형식이 맞지 않습니다.'};
-    $('#loginMsg').textContent=m[err.code]||('로그인 실패: '+err.code);
-  }
+  const em=$('#email').value.trim(),pw=$('#pw').value;
+  if(!em||!pw)return $('#loginMsg').textContent='이메일과 비밀번호를 입력하세요.';
+  $('#loginMsg').textContent='로그인 중…';
+  try{await firebase.auth().signInWithEmailAndPassword(em,pw)}
+  catch(err){const m={'auth/invalid-credential':'이메일 또는 비밀번호가 맞지 않습니다.','auth/wrong-password':'비밀번호가 맞지 않습니다.','auth/user-not-found':'등록되지 않은 이메일입니다.','auth/too-many-requests':'시도가 너무 많습니다. 잠시 후 다시 해 주세요.','auth/network-request-failed':'인터넷 연결을 확인하세요.','auth/invalid-email':'이메일 형식이 맞지 않습니다.'};$('#loginMsg').textContent=m[err.code]||('로그인 실패: '+err.code)}
 }
-async function resetPw(){
-  const em=$('#email').value.trim();if(!em)return $('#loginMsg').textContent='먼저 이메일을 입력하세요.';
-  try{await firebase.auth().sendPasswordResetEmail(em);$('#loginMsg').textContent=em+'로 비밀번호 재설정 메일을 보냈습니다.'}catch(err){$('#loginMsg').textContent='메일을 보내지 못했습니다: '+err.code}
-}
+async function resetPw(){const em=$('#email').value.trim();if(!em)return $('#loginMsg').textContent='먼저 이메일을 입력하세요.';try{await firebase.auth().sendPasswordResetEmail(em);$('#loginMsg').textContent=em+'로 비밀번호 재설정 메일을 보냈습니다.'}catch(err){$('#loginMsg').textContent='메일을 보내지 못했습니다: '+err.code}}
 
 function boot(){
-  if(typeof firebase==='undefined'||!window.FIREBASE_CONFIG||!FIREBASE_CONFIG.apiKey){
-    document.body.innerHTML='<div class="empty">Firebase 설정이 아직 없습니다. firebase-config.js를 확인하세요.</div>';return}
-  firebase.initializeApp(FIREBASE_CONFIG);
-  FS=firebase.firestore();
-  $('#loginForm').addEventListener('submit',doLogin);
-  $('#resetBtn').onclick=resetPw;
-  $('#logout').onclick=async()=>{if(Object.values(pending).some(Boolean))return tell('아직 저장 중입니다. 잠시 후 로그아웃하세요.');await firebase.auth().signOut()};
+  if(typeof firebase==='undefined'||!window.FIREBASE_CONFIG||!FIREBASE_CONFIG.apiKey){document.body.innerHTML='<div class="empty">Firebase 설정을 불러오지 못했습니다. 새로 고침(Ctrl+F5)해 주세요.</div>';return}
+  firebase.initializeApp(FIREBASE_CONFIG);FS=firebase.firestore();
+  $('#loginForm').addEventListener('submit',doLogin);$('#resetBtn').onclick=resetPw;
+  $('#logout').onclick=async()=>{if(anyPending())return tell('아직 저장 중입니다. 잠시 후 로그아웃하세요.');await firebase.auth().signOut()};
   firebase.auth().onAuthStateChanged(u=>{
     if(unsub){unsub();unsub=null}
-    S.periods={};ready=false;
+    S.periods={};ready=false;USER=u;
     if(!u){showLogin();return}
-    if(!u.emailVerified){
-      showLogin();
-      $('#loginMsg').innerHTML=`${esc(u.email)}로 보낸 <b>인증 메일</b>의 링크를 누른 뒤 이 페이지를 새로 고침하세요.<br><button class="linkbtn" type="button" id="resendV">인증 메일 다시 보내기</button> · <button class="linkbtn" type="button" id="outV">다른 계정으로</button>`;
-      $('#resendV').onclick=async()=>{try{await u.sendEmailVerification();toast('인증 메일을 다시 보냈습니다')}catch(e){toast('잠시 후 다시 시도하세요')}};
-      $('#outV').onclick=()=>firebase.auth().signOut();
-      return;
-    }
-    $('#login').hidden=true;$('#app').hidden=false;$('#who').textContent=u.email;
-    setSync('불러오는 중…');render();
+    if(!u.emailVerified){showLogin();$('#loginMsg').innerHTML=`${esc(u.email)}로 보낸 <b>인증 메일</b>의 링크를 누른 뒤 새로 고침하세요. <button class="linkbtn" type="button" id="resendV">인증 메일 다시 보내기</button>`;$('#resendV').onclick=async()=>{try{await u.sendEmailVerification();toast('인증 메일을 다시 보냈습니다')}catch(e){toast('잠시 후 다시 시도하세요')}};return}
+    $('#login').hidden=true;$('#app').hidden=false;$('#who').textContent=u.email;setSync('불러오는 중…');render();
+    FS.collection('meta').doc('app').get().then(s=>{APPMETA=s.exists?s.data():{};render()}).catch(()=>{});
     unsub=FS.collection('periods').onSnapshot(snap=>{
+      let touchedCur=false;
       snap.docChanges().forEach(ch=>{
         const id=ch.doc.id;if(pending[id]||writing[id])return;
-        if(ch.type==='removed')delete S.periods[id]; else S.periods[id]=blank(clone(ch.doc.data()));
+        if(ch.type==='removed'){delete S.periods[id];baseRev[id]=0}
+        else{const d=ch.doc.data();baseRev[id]=d.rev||0;META[id]={by:d.updatedBy,at:d.updatedAtMs};S.periods[id]=blank(clone(d))}
+        if(id===cur)touchedCur=true;
       });
       ready=true;canWrite=true;
-      if(!snap.metadata.hasPendingWrites&&!Object.values(pending).some(Boolean))setSync('온라인 · 저장됨');
+      if(!snap.metadata.hasPendingWrites&&!anyPending())setSync('온라인 · 저장됨');
       const a=document.activeElement;
-      if(a&&a.matches&&a.matches('input.c,textarea')&&snap.docChanges().every(c=>c.doc.id!==cur))return;
+      if(a&&a.matches&&a.matches('input.c,textarea,select.c')&&!touchedCur&&snap.docChanges().length)return;
       const y=window.scrollY;render();window.scrollTo(0,y);
-    },err=>{
-      if(err.code==='permission-denied'){ready=true;canWrite=false;setSync('권한 없음');$('#main').innerHTML=`<div class="empty">${esc(u.email)} 계정은 이 장부를 볼 권한이 없습니다.<br>관리자에게 허용된 이메일로 로그인하세요.</div>`}
-      else{setSync('연결 끊김');tell('자료 연결이 끊겼습니다. 페이지를 새로 고침해 주세요. ('+err.code+')')}
-    });
+    },err=>{if(err.code==='permission-denied'){ready=true;canWrite=false;setSync('권한 없음');$('#main').innerHTML=`<div class="empty">${esc(u.email)} 계정은 이 장부를 볼 권한이 없습니다.</div>`}else{setSync('연결 끊김');tell('자료 연결이 끊겼습니다. 새로 고침해 주세요. ('+err.code+')')}});
   });
 }
 /* ---------- 계산 ---------- */
+const periods=()=>Object.keys(S.periods).sort();
+const P=p=>S.periods[p||cur];
+const prevOf=p=>{const ps=periods(),i=ps.indexOf(p);return i>0?ps[i-1]:null};
+const isLatest2=p=>periods().slice(-2).includes(p);
+const editable=p=>canWrite&&!(P(p)&&P(p).closed)&&(isLatest2(p)||unlocked[p]);
+const roomsOf=p=>(P(p).meters||[]).map(r=>r.room);
+
 function usage(prev,cur){
   if(cur===null||cur===undefined||prev===null||prev===undefined)return {u:null};
   const u=cur-prev;
@@ -233,145 +305,258 @@ function usage(prev,cur){
   return u<0?{u,neg:true}:{u};
 }
 function meterRows(p){return P(p).meters.map(r=>({...r,e:usage(r.ep,r.ec),w:r.wc===null||r.wc===undefined?{u:null}:usage(r.wp,r.wc)}))}
-function finActive(p){return hasFin(p)||!!opening(p)}
-function hasFin(p){const x=P(p);return !!(x.opening||x.payments.length||x.expenses.length||x.cash.length)}
-function closing(p){
-  const x=P(p),o=opening(p);if(!o)return null;
-  const pay=sum(x.payments.map(a=>a.amount)),exp=sum(x.expenses.map(a=>a.amount)),cash=sum(x.cash.map(a=>a.amount));
-  const bank=o.bank+(o.interest||0)+pay-exp,cashLeft=o.cash-cash;
-  return {pay,exp,cashUsed:cash,bank,cash:cashLeft,total:bank+cashLeft};
+function waterUse(p){ // 이 달에 수도 검침이 없으면 가장 최근 수도 검침 달 기준
+  let q=p;while(q){const rows=meterRows(q);if(rows.some(r=>r.w.u!==null))return {p:q,map:Object.fromEntries(rows.map(r=>[r.room,Math.max(0,r.w.u||0)]))};q=prevOf(q)}
+  return {p:null,map:{}};
 }
+function hasFin(p){const x=P(p);return !!(x.opening||x.payments.length||x.expenses.length||x.cash.length||x.closed)}
+function finActive(p){return hasFin(p)||!!opening(p)}
+const _memo={};function memoClear(){for(const k in _memo)delete _memo[k]}
 function opening(p){
   const x=P(p);if(x.opening)return x.opening;
-  const q=prevOf(p);if(!q||!finActive(q))return null;
-  const c=closing(q);return c?{bank:c.bank,interest:0,cash:c.cash,auto:true}:null;
+  const q=prevOf(p);if(!q)return null;
+  const Q=P(q);if(Q.closed)return {bank:Q.closed.bank,interest:0,cash:Q.closed.cash,auto:'closed'};
+  if(!finActive(q))return null;
+  const c=closing(q);return c?{bank:c.bank,interest:0,cash:c.cash,auto:'live'}:null;
 }
-function arrearLeft(a){return (+a.charge||0)+(+a.lateFee||0)-(+a.paid||0)}
+function closing(p){
+  const k='c'+p;if(_memo[k]!==undefined)return _memo[k];
+  const x=P(p),o=opening(p);if(!o)return _memo[k]=null;
+  const pay=sum(x.payments.map(a=>a.amount)),exp=sum(x.expenses.map(a=>a.amount)),cash=sum(x.cash.map(a=>a.amount));
+  const bank=o.bank+(o.interest||0)+pay-exp,cashLeft=o.cash-cash;
+  return _memo[k]={pay,exp,cashUsed:cash,bank,cash:cashLeft,total:bank+cashLeft};
+}
+/* 부과 */
+const METHODS={equal:'세대 균등',elec:'전기 사용량 비례',water:'수도 사용량 비례'};
+function hasBilling(p){const b=P(p).billing;return !!(b&&((b.items||[]).length||Object.values(b.adjust||{}).some(v=>v)))}
+const parseRooms=s=>String(s||'').split(/[^0-9]+/).filter(Boolean);
+function billing(p){
+  const k='b'+p;if(_memo[k]!==undefined)return _memo[k];
+  const x=P(p),b=x.billing;if(!hasBilling(p))return _memo[k]=null;
+  const unit=b.unit||10,rooms=roomsOf(p),rows=meterRows(p),eMap=Object.fromEntries(rows.map(r=>[r.room,Math.max(0,r.e.u||0)])),wu=waterUse(p);
+  const per=Object.fromEntries(rooms.map(r=>[r,{items:[],adjust:+((b.adjust||{})[r]||0),total:0}]));
+  const itemRes=(b.items||[]).map(it=>{
+    const ex=new Set(parseRooms(it.exclude)),elig=rooms.filter(r=>!ex.has(r));
+    const w=r=>it.method==='elec'?eMap[r]:it.method==='water'?(wu.map[r]||0):1;
+    const W=sum(elig.map(w));let alloc=0;
+    rooms.forEach(r=>{const v=(!ex.has(r)&&W>0)?Math.round((+it.total||0)*w(r)/W/unit)*unit:0;per[r].items.push(v);alloc+=v});
+    return {total:+it.total||0,alloc,diff:alloc-(+it.total||0),W};
+  });
+  rooms.forEach(r=>{per[r].total=sum(per[r].items)+per[r].adjust});
+  return _memo[k]={per,itemRes,sum:sum(rooms.map(r=>per[r].total)),waterFrom:wu.p,unit};
+}
+/* 미납: 부과가 있는 달은 호실별 장부(이월+부과-입금), 없는 달은 미납 목록(납부액은 입금 탭에서 자동) */
+const paidBy=(p,room)=>sum(P(p).payments.filter(a=>String(a.room)===String(room)).map(a=>a.amount));
+function arrearPaid(p,a){return paidBy(p,a.room)}
+function arrearLeft(a,p){return (+a.charge||0)+(+a.lateFee||0)-arrearPaid(p||cur,a)}
+function endBalance(q,room){
+  if(hasBilling(q)){const L=ledger(q);return L&&L.rows[room]?L.rows[room].end:0}
+  return sum(P(q).arrears.filter(a=>String(a.room)===String(room)).map(a=>arrearLeft(a,q)));
+}
+function ledger(p){
+  const k='l'+p;if(_memo[k]!==undefined)return _memo[k];
+  if(!hasBilling(p))return _memo[k]=null;
+  const B=billing(p),q=prevOf(p),rows={};
+  roomsOf(p).forEach(r=>{const carry=q?endBalance(q,r):0,bill=B.per[r].total,paid=paidBy(p,r);rows[r]={carry,bill,paid,end:carry+bill-paid}});
+  return _memo[k]={rows};
+}
+function unpaidTotal(p){
+  if(hasBilling(p)){const L=ledger(p);return sum(Object.values(L.rows).map(r=>Math.max(0,r.end)))}
+  return sum(P(p).arrears.map(a=>Math.max(0,arrearLeft(a,p))));
+}
+function overpaidTotal(p){if(!hasBilling(p))return 0;return sum(Object.values(ledger(p).rows).map(r=>Math.max(0,-r.end)))}
+
 function checks(p){
   const out=[],x=P(p),rows=meterRows(p);
+  if(x.closed)out.push(['ok',`이 달은 ${nowStr(x.closed.atMs)}에 마감되었습니다 (통장 ${won(x.closed.bank)}, 시재 ${won(x.closed.cash)}).`]);
   const miss=rows.filter(r=>r.ec===null||r.ec===undefined);
   if(miss.length)out.push(['warn',`전기 검침값이 비어 있는 호실 ${miss.length}곳: ${miss.map(r=>r.room).join(', ')}`]);
   const neg=rows.filter(r=>r.e.neg||r.w.neg);
   if(neg.length)out.push(['err',`사용량이 마이너스인 호실: ${neg.map(r=>r.room+'호').join(', ')} — 검침값을 확인하세요.`]);
   const roll=rows.filter(r=>r.e.roll);
   if(roll.length)out.push(['info',`계량기가 한 바퀴(10000) 돈 호실: ${roll.map(r=>`${r.room}호(${fmt(r.e.u)})`).join(', ')} — 자동으로 계산했습니다.`]);
-  const big=rows.filter(r=>r.e.u>1200);
-  if(big.length)out.push(['warn',`전기 사용량이 1,200 넘는 호실: ${big.map(r=>`${r.room}호(${fmt(r.e.u)})`).join(', ')} — 오기 여부를 확인하세요.`]);
+  // 평소 대비 급증: 최근 6개월 평균의 3배 이상이면서, 작년 같은 달의 2배 이상일 때만 (여름·겨울 계절 증가는 제외)
+  const ps=periods(),i=ps.indexOf(p),hist=ps.slice(Math.max(0,i-6),i);
+  const hm=hist.map(q=>Object.fromEntries(meterRows(q).map(z=>[z.room,z.e.u])));
+  const ly=(+p.slice(0,4)-1)+p.slice(4),lym=S.periods[ly]?Object.fromEntries(meterRows(ly).map(z=>[z.room,z.e.u])):null;
+  const spikes=rows.filter(r=>{if(!(r.e.u>0))return false;const h=hm.map(mp=>{const u=mp[r.room];return u>0&&u<3000?u:null}).filter(v=>v!==null);if(h.length<3)return r.e.u>1500;const avg=sum(h)/h.length;const lyv=lym&&lym[r.room]>0&&lym[r.room]<3000?lym[r.room]:null;return r.e.u>Math.max(avg*3,avg+300)&&(lyv===null||r.e.u>lyv*2)});
+  if(spikes.length)out.push(['warn',`전기 사용량이 평소보다 크게 늘어난 호실: ${spikes.map(r=>`${r.room}호(${fmt(r.e.u)})`).join(', ')} — 오기 여부를 확인하세요.`]);
   if(finActive(p)){
-    const paid=new Set(x.payments.filter(a=>a.amount>0).map(a=>a.room));
-    const none=x.meters.map(r=>r.room).filter(r=>!paid.has(r));
-    if(none.length)out.push(['warn',`입금 기록이 없는 호실 ${none.length}곳: ${none.join(', ')}`]);
+    const rs=new Set(roomsOf(p));
+    const bad=x.payments.filter(a=>a.amount&&!rs.has(String(a.room)));
+    if(bad.length)out.push(['err',`호실 번호가 잘못된 입금 ${bad.length}건: ${bad.map(a=>a.room||'(빈칸)').join(', ')}`]);
+    const seen={},dup=[];x.payments.forEach(a=>{const k=a.room+'|'+a.date+'|'+a.amount;if(a.amount&&seen[k])dup.push(a.room+'호');seen[k]=1});
+    if(dup.length)out.push(['warn',`같은 호실·날짜·금액으로 두 번 들어간 입금: ${dup.join(', ')} — 중복 입력인지 확인하세요.`]);
+    const paid=new Set(x.payments.filter(a=>a.amount>0).map(a=>String(a.room)));
+    const none=roomsOf(p).filter(r=>!paid.has(r));
+    if(none.length&&none.length<roomsOf(p).length)out.push(['warn',`입금 기록이 없는 호실 ${none.length}곳: ${none.join(', ')}`]);
     const c=closing(p);
     if(x.reported){
       const d=[['통장 잔여금',x.reported.bank,c.bank],['시재 잔액',x.reported.cash,c.cash],['총 합계금',x.reported.total,c.total]].filter(t=>t[1]!=null&&t[1]!==t[2]);
       if(d.length)d.forEach(t=>out.push(['err',`${t[0]}: 원본 ${won(t[1])} ↔ 계산 ${won(t[2])} (차이 ${won(t[2]-t[1])})`]));
       else out.push(['ok',`원본 엑셀의 통장 잔여금 ${won(x.reported.bank)}·총 합계금 ${won(x.reported.total)}과 계산값이 일치합니다.`]);
     }
-    if(c.cash<0)out.push(['err',`시재 잔액이 마이너스입니다 (${won(c.cash)}).`]);
-    const ar=x.arrears.filter(a=>arrearLeft(a)>0);
-    if(ar.length)out.push(['info',`미납 ${ar.length}세대, 합계 ${won(sum(ar.map(arrearLeft)))}`]);
+    if(c&&c.cash<0)out.push(['err',`시재 잔액이 마이너스입니다 (${won(c.cash)}).`]);
+    if(hasBilling(p)){
+      const B=billing(p),tot=sum(B.itemRes.map(r=>r.total));
+      out.push(['info',`당월 부과 총액 ${won(B.sum)} (항목 합계 ${won(tot)}${B.sum-tot?`, 반올림·조정 차이 ${won(B.sum-tot)}`:''}) · 통장 지출 ${won(c?c.exp:0)}`]);
+      const un=unpaidTotal(p),ov=overpaidTotal(p);
+      if(un)out.push(['info',`미납 ${Object.values(ledger(p).rows).filter(r=>r.end>0).length}세대 ${won(un)}${ov?` · 과오납 ${won(ov)}`:''}`]);
+    }else{
+      const ar=x.arrears.filter(a=>arrearLeft(a,p)>0);
+      if(ar.length)out.push(['info',`미납 ${ar.length}세대, 합계 ${won(unpaidTotal(p))}`]);
+    }
+    const q=prevOf(p);if(q&&!x.opening&&finActive(q)&&!P(q).closed)out.push(['info',`이월금이 ${label(q)} 결산에서 자동으로 계산되고 있습니다. ${label(q)}을 마감하면 고정됩니다.`]);
   }else out.push(['info','이 달은 검침 기록만 있습니다. 입금·지출은 원본 엑셀에 이 달 기록이 없거나 아직 입력 전입니다.']);
+  if(p===periods().slice(-1)[0]){const lb=APPMETA.lastBackup||0;if(Date.now()-lb>31*864e5)out.push(['warn',lb?`마지막 백업이 ${nowStr(lb)}입니다. 설정·백업에서 백업 파일을 내려받아 두세요.`:'아직 백업 파일을 한 번도 내려받지 않았습니다. 설정·백업에서 내려받아 두세요.'])}
   return out;
 }
-
-const periods=()=>Object.keys(S.periods).sort();
-const P=p=>S.periods[p||cur];
-const prevOf=p=>{const ps=periods(),i=ps.indexOf(p);return i>0?ps[i-1]:null};
-const isLatest2=p=>periods().slice(-2).includes(p);
-const editable=p=>canWrite&&(isLatest2(p)||unlocked[p]);
-
-const TABS=[['summary','점검·요약'],['meters','① 검침'],['payments','② 입금'],['expenses','③ 지출·시재'],['arrears','④ 미납'],['close','⑤ 월결산'],['history','지난 기록·호실 이력'],['settings','설정·백업']];
+/* ---------- 화면 ---------- */
+const TABS=[['summary','점검·요약'],['meters','① 검침'],['billing','② 부과'],['payments','③ 입금'],['expenses','④ 지출·시재'],['arrears','⑤ 미납'],['close','⑥ 월결산'],['history','지난 기록·호실 이력'],['logs','변경 기록'],['settings','설정·백업']];
 function render(){
+  memoClear();
   const ps=periods();
   if(!ps.length){
     $('#period').innerHTML='';$('#tabs').innerHTML='';
-    $('#main').innerHTML=ready?`<div class="empty">아직 저장된 관리비 자료가 없습니다.<br>설정·백업의 '백업 파일로 복원'으로 자료를 올리거나, '정연관리비_초기자료.json' 파일을 고르세요.<br><br><button class="btn p" data-act="restore">백업 파일로 복원</button></div>`:'<div class="empty">관리비 자료를 불러오는 중입니다…</div>';
+    $('#main').innerHTML=ready?`<div class="empty">아직 저장된 관리비 자료가 없습니다.<br>'백업 파일로 복원'으로 백업(.json) 파일을 올려 주세요.<br><br><button class="btn p" data-act="restore">백업 파일로 복원</button></div>`:'<div class="empty">관리비 자료를 불러오는 중입니다…</div>';
     return;
   }
   if(!S.periods[cur])cur=ps[ps.length-1];
-  $('#period').innerHTML=ps.slice().reverse().map(p=>`<option value="${p}" ${p===cur?'selected':''}>${label(p)}${finActive(p)?'':' (검침)'}</option>`).join('');
+  $('#period').innerHTML=ps.slice().reverse().map(p=>`<option value="${p}" ${p===cur?'selected':''}>${label(p)}${P(p).closed?' ✔마감':finActive(p)?'':' (검침)'}</option>`).join('');
   const nErr=checks(cur).filter(c=>c[0]==='err').length;
   $('#tabs').innerHTML=TABS.map(([k,t])=>`<button data-tab="${k}" class="${k===tab?'on':''}">${t}${k==='summary'&&nErr?`<span class="badge">${nErr}</span>`:''}</button>`).join('');
   $('#main').innerHTML=VIEWS[tab]();
   $('#newMonth').disabled=!canWrite;
   bindInputs();
+  if(tab==='logs')loadLogs();
 }
-function lockBar(){if(editable(cur)||!canWrite)return '';return `<div class="lock">🔒 지난 달(${label(cur)})은 실수로 바뀌지 않도록 잠겨 있습니다. <button class="btn s" data-act="unlock">이 달 수정하기</button></div>`}
-function cell(path,val,num,ro){const id='f_'+cur+'_'+path.replace(/\|/g,'_');return `<input class="c ${num?'num':''}" id="${id}" data-path="${path}" value="${esc(num?fmt(val):val)}" ${ro||!editable(cur)?'readonly':''} ${num?'inputmode="numeric"':''}>`}
+function lockBar(){
+  const x=P();
+  if(x.closed)return `<div class="closed">✔ ${label(cur)}은 마감된 달입니다 (${nowStr(x.closed.atMs)}, ${esc(x.closed.by||'')}). 고치려면 ⑥ 월결산에서 '마감 해제'를 누르세요.</div>`;
+  if(editable(cur)||!canWrite)return '';
+  return `<div class="lock">🔒 지난 달(${label(cur)})은 실수로 바뀌지 않도록 잠겨 있습니다. <button class="btn s" data-act="unlock">이 달 수정하기</button></div>`;
+}
+function cell(path,val,num,ro,extra){const id='f_'+cur+'_'+path.replace(/\|/g,'_');return `<input class="c ${num?'num':''}" id="${id}" data-path="${path}" value="${esc(num?fmt(val):val)}" ${ro||!editable(cur)?'readonly':''} ${num?'inputmode="numeric"':''} ${extra||''}>`}
 function bindInputs(){
-  document.querySelectorAll('input.c[data-path]').forEach(el=>el.addEventListener('change',()=>{
+  document.querySelectorAll('[data-path]').forEach(el=>el.addEventListener('change',()=>{
     const [list,i,f]=el.dataset.path.split('|');const num=el.classList.contains('num');
     let v=el.value.trim();if(num){v=toNum(v);if(Number.isNaN(v)){toast('숫자만 입력하세요');el.value='';return}}
+    if(f==='date')v=normDate(v);
     change(cur,x=>{
-      const tgt=list==='opening'?(x.opening=x.opening||(()=>{const o=opening(cur)||{bank:0,interest:0,cash:0};return {bank:o.bank,interest:o.interest||0,cash:o.cash}})()):x[list][+i];
+      let tgt;
+      if(list==='opening')tgt=x.opening=x.opening||(()=>{const o=opening(cur)||{bank:0,interest:0,cash:0};return {bank:o.bank,interest:o.interest||0,cash:o.cash}})();
+      else if(list==='bitem')tgt=x.billing.items[+i];
+      else if(list==='badj'){x.billing.adjust=x.billing.adjust||{};if(v===null||v===0)delete x.billing.adjust[i];else x.billing.adjust[i]=v;return}
+      else if(list==='bunit'){x.billing.unit=+v;return}
+      else tgt=x[list][+i];
       tgt[f]=num?(v===null&&list!=='meters'?0:v):v;
     });
     const y=window.scrollY;render();window.scrollTo(0,y);
   }));
 }
+const pill=(t,c)=>`<span class="pill ${c||'info'}">${t}</span>`;
 const VIEWS={
 summary(){
-  const x=P(),rows=meterRows(cur),c=finActive(cur)?closing(cur):null,o=opening(cur);
+  const x=P(),rows=meterRows(cur),c=finActive(cur)?closing(cur):null;
   const eu=sum(rows.map(r=>r.e.u)),wu=sum(rows.map(r=>r.w.u));
-  const ar=x.arrears.filter(a=>arrearLeft(a)>0);
   const cards=[['전기 사용량 합계',fmt(eu)],['수도 사용량 합계',rows.some(r=>r.w.u!==null)?fmt(wu):'— (격월)']];
-  if(c)cards.push(['관리비 입금 합계',won(c.pay),'green'],['미납 합계',won(sum(ar.map(arrearLeft))),ar.length?'red':''],['통장 지출 합계',won(c.exp)],['통장 잔여금',won(c.bank)],['총 합계금(통장+시재)',won(c.total)]);
+  if(hasBilling(cur))cards.push(['당월 부과 총액',won(billing(cur).sum)]);
+  if(c){const un=unpaidTotal(cur);cards.push(['관리비 입금 합계',won(c.pay),'green'],['미납 합계',won(un),un?'red':''],['통장 지출 합계',won(c.exp)],['통장 잔여금',won(c.bank)],['총 합계금(통장+시재)',won(c.total)])}
+  const m=META[cur];
   return `<div class="cards">${cards.map(([k,v,cl])=>`<div class="card"><div class="k">${k}</div><div class="v ${cl||''}">${v}</div></div>`).join('')}</div>
-  <div class="panel"><h2>점검 결과 <small>${label(cur)} · 자동 대조</small></h2>${checks(cur).map(([t,m])=>`<div class="msg ${t}"><b>${{err:'오류',warn:'주의',info:'참고',ok:'정상'}[t]}</b><span>${esc(m)}</span></div>`).join('')}</div>
+  <div class="panel"><h2>점검 결과 <small>${label(cur)} · 자동 대조${m&&m.at?` · 마지막 수정 ${nowStr(m.at)} ${esc(m.by||'')}`:''}</small></h2>${checks(cur).map(([t,s])=>`<div class="msg ${t}"><b>${{err:'오류',warn:'주의',info:'참고',ok:'정상'}[t]}</b><span>${esc(s)}</span></div>`).join('')}</div>
   <div class="panel"><h2>이 달 메모</h2>${editable(cur)?`<textarea id="memo">${esc(x.memo||'')}</textarea>`:`<p>${esc(x.memo||'')}</p>`}</div>
-  <div class="panel"><h2>사용 순서</h2><ol style="margin:0;line-height:1.9">
-  <li><b>① 검침</b> — 이번 달 전기(매월)·수도(홀수 달) 검침값 입력. 전월 값은 자동으로 이어집니다.</li>
-  <li><b>② 입금</b> — 호실별 입금일·입금액 입력.</li>
-  <li><b>③ 지출·시재</b> — 통장 지출과 전도금(시재) 지출 입력.</li>
-  <li><b>④ 미납</b> — 미납 세대 확인·수정. <b>⑤ 월결산</b>에서 통장 잔여금 확인 후 <b>엑셀로 내보내기</b>.</li>
-  <li>다음 달은 <b>+ 새 달 만들기</b>(한 달에 한 번). 통장·시재 잔액, 미납이 자동으로 넘어갑니다.</li>
-  <li><b>지난 기록</b>은 위쪽 '정산월'에서 고르거나 '지난 기록·호실 이력' 탭에서 봅니다.</li></ol></div>`;
+  <div class="panel"><h2>매달 순서</h2><ol style="margin:0;line-height:1.9">
+  <li><b>+ 새 달 만들기</b> (한 달에 한 번) — 입주자·전월 검침값·잔액·미납이 이어집니다.</li>
+  <li><b>① 검침</b> — 휴대폰이면 '한 호실씩 입력'이 편합니다. 전기는 매월, 수도는 홀수 달.</li>
+  <li><b>② 부과</b> — 고지서 총액을 항목별로 넣으면 호실별 부과액이 계산됩니다 (선택).</li>
+  <li><b>③ 입금</b> · <b>④ 지출·시재</b> 입력 → <b>⑤ 미납</b>은 자동 계산.</li>
+  <li><b>⑥ 월결산</b>에서 확인 후 <b>이 달 마감</b> → <b>엑셀로 내보내기</b>.</li></ol></div>`;
 },
 meters(){
   const rows=meterRows(cur),water=rows.some(r=>r.wc!==null&&r.wc!==undefined)||(+cur.slice(5))%2===1;
-  let h='',idx=0;
+  let h='';
   for(const f of ROOMS_FLOORS){
     const fr=rows.map((r,i)=>({...r,i})).filter(r=>r.room[0]==String(f));if(!fr.length)continue;
     for(const r of fr){
-      const e=r.e,w=r.w;
-      h+=`<tr><td><b>${r.room}</b></td><td>${cell(`meters|${r.i}|name`,r.name)}</td><td class="n">${cell(`meters|${r.i}|ep`,r.ep,1)}</td><td class="n">${cell(`meters|${r.i}|ec`,r.ec,1)}</td><td class="n ${e.neg?'red':''}">${fmt(e.u)}${e.roll?' <span class="pill info">한바퀴</span>':''}</td>`+
-      (water?`<td class="n">${cell(`meters|${r.i}|wp`,r.wp,1)}</td><td class="n">${cell(`meters|${r.i}|wc`,r.wc,1)}</td><td class="n ${w.neg?'red':''}">${fmt(w.u)}</td>`:'')+`</tr>`;
+      h+=`<tr><td><b>${r.room}</b></td><td>${cell(`meters|${r.i}|name`,r.name)}</td><td class="n hide-m">${cell(`meters|${r.i}|ep`,r.ep,1)}</td><td class="n">${cell(`meters|${r.i}|ec`,r.ec,1)}</td><td class="n ${r.e.neg?'red':''}">${fmt(r.e.u)}${r.e.roll?' '+pill('한바퀴'):''}</td>`+
+      (water?`<td class="n hide-m">${cell(`meters|${r.i}|wp`,r.wp,1)}</td><td class="n">${cell(`meters|${r.i}|wc`,r.wc,1)}</td><td class="n ${r.w.neg?'red':''}">${fmt(r.w.u)}</td>`:'')+`</tr>`;
     }
-    h+=`<tr class="sub"><td colspan="2">${f}층 소계</td><td class="n">${fmt(sum(fr.map(r=>r.ep)))}</td><td class="n">${fmt(sum(fr.map(r=>r.ec)))}</td><td class="n">${fmt(sum(fr.map(r=>r.e.u)))}</td>`+(water?`<td class="n">${fmt(sum(fr.map(r=>r.wp)))}</td><td class="n">${fmt(sum(fr.map(r=>r.wc)))}</td><td class="n">${fmt(sum(fr.map(r=>r.w.u)))}</td>`:'')+`</tr>`;
+    h+=`<tr class="sub"><td colspan="2">${f}층 소계</td><td class="n hide-m">${fmt(sum(fr.map(r=>r.ep)))}</td><td class="n">${fmt(sum(fr.map(r=>r.ec)))}</td><td class="n">${fmt(sum(fr.map(r=>r.e.u)))}</td>`+(water?`<td class="n hide-m">${fmt(sum(fr.map(r=>r.wp)))}</td><td class="n">${fmt(sum(fr.map(r=>r.wc)))}</td><td class="n">${fmt(sum(fr.map(r=>r.w.u)))}</td>`:'')+`</tr>`;
   }
-  h+=`<tr class="tot"><td colspan="2">합계</td><td class="n">${fmt(sum(rows.map(r=>r.ep)))}</td><td class="n">${fmt(sum(rows.map(r=>r.ec)))}</td><td class="n">${fmt(sum(rows.map(r=>r.e.u)))}</td>`+(water?`<td class="n">${fmt(sum(rows.map(r=>r.wp)))}</td><td class="n">${fmt(sum(rows.map(r=>r.wc)))}</td><td class="n">${fmt(sum(rows.map(r=>r.w.u)))}</td>`:'')+`</tr>`;
-  return lockBar()+`<div class="panel"><h2>① 검침 <small>${label(cur)} · 노란 칸에 입력하면 바로 저장됩니다${water?'':' · 짝수 달은 수도 검침 없음'}</small></h2>
-  <div class="wrap"><table><thead><tr><th>호실</th><th>입주자</th><th class="n">전월 전기</th><th class="n">당월 전기</th><th class="n">전기 사용량</th>${water?'<th class="n">이전 수도</th><th class="n">당월 수도</th><th class="n">수도 사용량</th>':''}</tr></thead><tbody>${h}</tbody></table></div></div>`;
+  h+=`<tr class="tot"><td colspan="2">합계</td><td class="n hide-m">${fmt(sum(rows.map(r=>r.ep)))}</td><td class="n">${fmt(sum(rows.map(r=>r.ec)))}</td><td class="n">${fmt(sum(rows.map(r=>r.e.u)))}</td>`+(water?`<td class="n hide-m">${fmt(sum(rows.map(r=>r.wp)))}</td><td class="n">${fmt(sum(rows.map(r=>r.wc)))}</td><td class="n">${fmt(sum(rows.map(r=>r.w.u)))}</td>`:'')+`</tr>`;
+  return lockBar()+`<div class="panel"><h2>① 검침 <small>${label(cur)} · 노란 칸에 입력하면 바로 저장${water?'':' · 짝수 달은 수도 검침 없음'}</small></h2>
+  ${editable(cur)?`<div class="bar"><button class="btn p" data-act="quick">📱 한 호실씩 입력 (휴대폰용)</button></div>`:''}
+  <div class="wrap"><table><thead><tr><th>호실</th><th>입주자</th><th class="n hide-m">전월 전기</th><th class="n">당월 전기</th><th class="n">전기 사용량</th>${water?'<th class="n hide-m">이전 수도</th><th class="n">당월 수도</th><th class="n">수도 사용량</th>':''}</tr></thead><tbody>${h}</tbody></table></div></div>`;
+},
+billing(){
+  const x=P(),b=x.billing,ed=editable(cur);
+  if(!b||!(b.items||[]).length&&!Object.keys(b.adjust||{}).length){
+    return lockBar()+`<div class="panel"><h2>② 부과 <small>${label(cur)}</small></h2>
+    <p>고지서 총액(도급비·전기·수도 등)을 항목별로 넣고 <b>나누는 방식</b>을 고르면 호실별 부과액이 자동 계산됩니다. 부과를 쓰면 <b>⑤ 미납</b>이 '이월 + 부과 − 입금'으로 호실마다 자동 계산됩니다.</p>
+    <p class="muted">부과를 쓰지 않는 달은 지금처럼 ⑤ 미납 목록에 직접 적는 방식으로 동작합니다.</p>
+    ${ed?`<div class="bar"><button class="btn p" data-act="bill-start">부과 시작 (기본 항목 넣기)</button><button class="btn" data-act="bill-copy">지난달 부과 항목 복사</button></div>`:''}</div>`;
+  }
+  const B=billing(cur),rooms=roomsOf(cur),names=Object.fromEntries(x.meters.map(r=>[r.room,r.name])),items=b.items||[];
+  const itemRows=items.map((it,i)=>`<tr><td>${cell(`bitem|${i}|name`,it.name)}</td><td class="n">${cell(`bitem|${i}|total`,it.total,1)}</td>
+    <td><select class="c" data-path="bitem|${i}|method" ${ed?'':'disabled'}>${Object.entries(METHODS).map(([k,v])=>`<option value="${k}" ${it.method===k?'selected':''}>${v}</option>`).join('')}</select></td>
+    <td>${cell(`bitem|${i}|exclude`,it.exclude||'',0,0,'placeholder="예: 203, 310"')}</td>
+    <td class="n">${B?fmt(B.itemRes[i].alloc):''}${B&&B.itemRes[i].diff?` <small class="muted">(${B.itemRes[i].diff>0?'+':''}${fmt(B.itemRes[i].diff)})</small>`:''}</td>
+    <td>${ed?`<button class="btn s d" data-act="bill-del" data-i="${i}">삭제</button>`:''}</td></tr>`).join('');
+  const per=rooms.map(r=>`<tr><td><b>${r}</b></td><td class="hide-m">${esc(names[r])}</td>${items.map((it,i)=>`<td class="n">${fmt(B?B.per[r].items[i]:0)}</td>`).join('')}<td class="n">${cell(`badj|${r}|v`,(b.adjust||{})[r]||null,1)}</td><td class="n"><b>${fmt(B?B.per[r].total:0)}</b></td></tr>`).join('');
+  return lockBar()+`<div class="panel"><h2>② 부과 항목 <small>${label(cur)} · 반올림
+    <select class="c" data-path="bunit|0|v" ${ed?'':'disabled'}>${[1,10,100].map(u=>`<option value="${u}" ${(b.unit||10)==u?'selected':''}>${u}원 단위</option>`).join('')}</select></small></h2>
+    ${ed?`<div class="bar"><button class="btn" data-act="bill-add">+ 항목 추가</button></div>`:''}
+    <div class="wrap"><table><thead><tr><th>항목</th><th class="n">고지서 총액</th><th>나누는 방식</th><th>제외 호실(공실 등)</th><th class="n">배분 합계</th><th></th></tr></thead><tbody>${itemRows}</tbody>
+    <tfoot><tr class="tot"><td>합계</td><td class="n">${fmt(sum(items.map(i=>i.total)))}</td><td colspan="2"></td><td class="n">${B?fmt(sum(B.itemRes.map(r=>r.alloc))):''}</td><td></td></tr></tfoot></table></div>
+    <p class="muted">전기 비례는 이 달 전기 사용량, 수도 비례는 ${B&&B.waterFrom?label(B.waterFrom)+' 수도 사용량':'가장 최근 수도 사용량'} 기준입니다. 괄호 숫자는 반올림 때문에 생긴 차이입니다.</p></div>
+    <div class="panel"><h2>호실별 부과액 <small>개별 조정 칸에 +/− 금액을 넣으면 더하거나 뺍니다</small></h2>
+    <div class="wrap"><table><thead><tr><th>호실</th><th class="hide-m">입주자</th>${items.map(it=>`<th class="n">${esc(it.name)}</th>`).join('')}<th class="n">개별 조정</th><th class="n">부과액</th></tr></thead><tbody>${per}</tbody>
+    <tfoot><tr class="tot"><td colspan="2">합계</td>${items.map((it,i)=>`<td class="n">${B?fmt(B.itemRes[i].alloc):''}</td>`).join('')}<td class="n">${fmt(sum(Object.values(b.adjust||{})))}</td><td class="n">${B?fmt(B.sum):''}</td></tr></tfoot></table></div></div>`;
 },
 payments(){
-  const x=P(),names=Object.fromEntries(x.meters.map(r=>[r.room,r.name]));
-  const rows=x.payments.map((a,i)=>`<tr><td>${cell(`payments|${i}|room`,a.room)}</td><td class="muted">${esc(names[a.room]||'')}</td><td>${cell(`payments|${i}|payer`,a.payer)}</td><td>${cell(`payments|${i}|date`,a.date)}</td><td class="n">${cell(`payments|${i}|amount`,a.amount,1)}</td><td>${cell(`payments|${i}|note`,a.note)}</td><td class="np">${editable(cur)?`<button class="btn s d" data-act="del" data-list="payments" data-i="${i}">삭제</button>`:''}</td></tr>`).join('');
-  return lockBar()+`<div class="panel"><h2>② 관리비 입금 내역 <small>${label(cur)} 관리비 · ${x.payments.length}건</small></h2>
-  ${editable(cur)?`<div class="bar np"><button class="btn p" data-act="addPay">+ 입금 추가</button>${x.payments.length?'':`<button class="btn" data-act="fillPay">49개 호실 줄 만들기</button>`}<span class="muted">한 호실에 여러 번 입금해도 줄을 추가하면 됩니다.</span></div>`:''}
-  <div class="wrap"><table><thead><tr><th>호실</th><th>입주자(검침표)</th><th>입금자명</th><th>입금일</th><th class="n">입금액</th><th>비고</th><th class="np"></th></tr></thead><tbody>${rows||'<tr><td colspan="7" class="muted">입금 기록이 없습니다.</td></tr>'}</tbody>
-  <tfoot><tr class="tot"><td colspan="4">합계</td><td class="n">${fmt(sum(x.payments.map(a=>a.amount)))}</td><td colspan="2"></td></tr></tfoot></table></div></div>`;
+  const x=P(),names=Object.fromEntries(x.meters.map(r=>[r.room,r.name])),ed=editable(cur);
+  const order=x.payments.map((a,i)=>i);if(VIEWS._psort==='date')order.sort((i,j)=>dateKey(x.payments[i].date)-dateKey(x.payments[j].date));else if(VIEWS._psort==='room')order.sort((i,j)=>(+x.payments[i].room||0)-(+x.payments[j].room||0));
+  const B=hasBilling(cur)?billing(cur):null;
+  const rows=order.map(i=>{const a=x.payments[i];return `<tr><td>${cell(`payments|${i}|room`,a.room,0,0,'inputmode="numeric" style="max-width:70px"')}</td><td class="muted hide-m">${esc(names[a.room]||'')}</td><td>${cell(`payments|${i}|payer`,a.payer)}</td><td>${cell(`payments|${i}|date`,a.date,0,0,'placeholder="8/26"')}</td><td class="n">${cell(`payments|${i}|amount`,a.amount,1)}</td>${B?`<td class="n muted hide-m">${fmt(B.per[a.room]?B.per[a.room].total:'')}</td>`:''}<td>${cell(`payments|${i}|note`,a.note)}</td><td>${ed?`<button class="btn s d" data-act="del" data-list="payments" data-i="${i}">삭제</button>`:''}</td></tr>`}).join('');
+  return lockBar()+`<div class="panel"><h2>③ 관리비 입금 내역 <small>${label(cur)} 관리비 · ${x.payments.length}건 · 날짜는 8/26처럼 넣으면 자동 정리</small></h2>
+  <div class="bar">${ed?`<button class="btn p" data-act="addPay">+ 입금 추가</button>${x.payments.length?'':`<button class="btn" data-act="fillPay">49개 호실 줄 만들기</button>`}`:''}
+  <span class="muted">정렬</span><button class="btn s" data-act="psort" data-v="">입력순</button><button class="btn s" data-act="psort" data-v="room">호실순</button><button class="btn s" data-act="psort" data-v="date">날짜순</button></div>
+  <div class="wrap"><table><thead><tr><th>호실</th><th class="hide-m">입주자(검침표)</th><th>입금자명</th><th>입금일</th><th class="n">입금액</th>${B?'<th class="n hide-m">당월 부과액</th>':''}<th>비고</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="8" class="muted">입금 기록이 없습니다.</td></tr>'}</tbody>
+  <tfoot><tr class="tot"><td colspan="4">합계</td><td class="n">${fmt(sum(x.payments.map(a=>a.amount)))}</td>${B?`<td class="n hide-m">${fmt(B.sum)}</td>`:''}<td colspan="2"></td></tr></tfoot></table></div></div>`;
 },
 expenses(){
-  const x=P(),o=opening(cur);
-  const t=(list,title)=>`<div class="panel"><h2>${title}</h2>${editable(cur)?`<div class="bar np"><button class="btn p" data-act="add" data-list="${list}">+ 지출 추가</button></div>`:''}
-  <div class="wrap"><table><thead><tr><th>일자</th><th>지출 내용</th><th class="n">금액</th><th>비고</th><th class="np"></th></tr></thead><tbody>${x[list].map((a,i)=>`<tr><td>${cell(`${list}|${i}|date`,a.date)}</td><td>${cell(`${list}|${i}|desc`,a.desc)}</td><td class="n">${cell(`${list}|${i}|amount`,a.amount,1)}</td><td>${cell(`${list}|${i}|note`,a.note)}</td><td class="np">${editable(cur)?`<button class="btn s d" data-act="del" data-list="${list}" data-i="${i}">삭제</button>`:''}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">기록 없음</td></tr>'}</tbody>
+  const x=P(),o=opening(cur),ed=editable(cur);
+  const t=(list,title)=>`<div class="panel"><h2>${title}</h2>${ed?`<div class="bar"><button class="btn p" data-act="add" data-list="${list}">+ 지출 추가</button>${list==='expenses'&&!x.expenses.length&&prevOf(cur)&&P(prevOf(cur)).expenses.length?'<button class="btn" data-act="copyExp">지난달 지출 항목 복사</button>':''}</div>`:''}
+  <div class="wrap"><table><thead><tr><th>일자</th><th>지출 내용</th><th class="n">금액</th><th>비고</th><th></th></tr></thead><tbody>${x[list].map((a,i)=>`<tr><td>${cell(`${list}|${i}|date`,a.date,0,0,'placeholder="8/26"')}</td><td>${cell(`${list}|${i}|desc`,a.desc)}</td><td class="n">${cell(`${list}|${i}|amount`,a.amount,1)}</td><td>${cell(`${list}|${i}|note`,a.note)}</td><td>${ed?`<button class="btn s d" data-act="del" data-list="${list}" data-i="${i}">삭제</button>`:''}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">기록 없음</td></tr>'}</tbody>
   <tfoot><tr class="tot"><td colspan="2">합계</td><td class="n">${fmt(sum(x[list].map(a=>a.amount)))}</td><td colspan="2"></td></tr></tfoot></table></div></div>`;
-  return lockBar()+t('expenses',`③ 통장 공과금 지출 내역 <small>${label(cur)}</small>`)+t('cash',`전도금(시재) 지출 내역 <small>이월금 ${won(o?o.cash:null)}</small>`);
+  return lockBar()+t('expenses',`④ 통장 공과금 지출 내역 <small>${label(cur)}</small>`)+t('cash',`전도금(시재) 지출 내역 <small>이월금 ${won(o?o.cash:null)}</small>`);
 },
 arrears(){
-  const x=P();
-  const rows=x.arrears.map((a,i)=>`<tr><td>${cell(`arrears|${i}|room`,a.room)}</td><td>${cell(`arrears|${i}|name`,a.name)}</td><td class="n">${cell(`arrears|${i}|charge`,a.charge,1)}</td><td class="n">${cell(`arrears|${i}|lateFee`,a.lateFee,1)}</td><td class="n">${cell(`arrears|${i}|paid`,a.paid,1)}</td><td class="n ${arrearLeft(a)>0?'red':'green'}"><b>${fmt(arrearLeft(a))}</b></td><td>${cell(`arrears|${i}|note`,a.note)}</td><td class="np">${editable(cur)?`<button class="btn s d" data-act="del" data-list="arrears" data-i="${i}">삭제</button>`:''}</td></tr>`).join('');
-  return lockBar()+`<div class="panel"><h2>④ 미납 현황 <small>${label(cur)} · 남은 미납 = 부과액 + 연체료 − 납부액</small></h2>
-  ${editable(cur)?`<div class="bar np"><button class="btn p" data-act="add" data-list="arrears">+ 미납 세대 추가</button><span class="muted">'새 달 만들기' 때 남은 미납액이 있는 세대는 다음 달로 자동으로 넘어갑니다.</span></div>`:''}
-  <div class="wrap"><table><thead><tr><th>호실</th><th>입주자</th><th class="n">부과액(누적)</th><th class="n">연체료</th><th class="n">납부액</th><th class="n">남은 미납</th><th>비고</th><th class="np"></th></tr></thead><tbody>${rows||'<tr><td colspan="8" class="muted">미납 세대가 없습니다.</td></tr>'}</tbody>
-  <tfoot><tr class="tot"><td colspan="5">합계</td><td class="n red">${fmt(sum(x.arrears.map(arrearLeft)))}</td><td colspan="2"></td></tr></tfoot></table></div></div>`;
+  const x=P(),ed=editable(cur);
+  if(hasBilling(cur)){
+    const L=ledger(cur),names=Object.fromEntries(x.meters.map(r=>[r.room,r.name]));
+    const rs=roomsOf(cur);
+    const rows=rs.map(r=>{const z=L.rows[r];return `<tr><td><b>${r}</b></td><td class="hide-m">${esc(names[r])}</td><td class="n">${fmt(z.carry)}</td><td class="n">${fmt(z.bill)}</td><td class="n">${fmt(z.paid)}</td><td class="n ${z.end>0?'red':z.end<0?'neg':''}"><b>${fmt(z.end)}</b>${z.end<0?' '+pill('과오납'):''}</td></tr>`}).join('');
+    const T=k=>sum(rs.map(r=>L.rows[r][k]));
+    return lockBar()+`<div class="panel"><h2>⑤ 미납 현황 (자동) <small>${label(cur)} · 잔액 = 전월 잔액 + 당월 부과 − 당월 입금</small></h2>
+    <div class="cards"><div class="card"><div class="k">미납 합계</div><div class="v red">${won(unpaidTotal(cur))}</div></div><div class="card"><div class="k">과오납 합계 (다음 달 차감)</div><div class="v neg">${won(overpaidTotal(cur))}</div></div></div>
+    <div class="wrap"><table><thead><tr><th>호실</th><th class="hide-m">입주자</th><th class="n">전월 잔액</th><th class="n">당월 부과</th><th class="n">당월 입금</th><th class="n">잔액</th></tr></thead><tbody>${rows}</tbody>
+    <tfoot><tr class="tot"><td colspan="2">합계</td><td class="n">${fmt(T('carry'))}</td><td class="n">${fmt(T('bill'))}</td><td class="n">${fmt(T('paid'))}</td><td class="n">${fmt(T('end'))}</td></tr></tfoot></table></div></div>`;
+  }
+  const rows=x.arrears.map((a,i)=>{const pd=arrearPaid(cur,a),left=arrearLeft(a,cur);return `<tr><td>${cell(`arrears|${i}|room`,a.room,0,0,'style="max-width:70px"')}</td><td>${cell(`arrears|${i}|name`,a.name)}</td><td class="n">${cell(`arrears|${i}|charge`,a.charge,1)}</td><td class="n">${cell(`arrears|${i}|lateFee`,a.lateFee,1)}</td><td class="n">${fmt(pd)}</td><td class="n ${left>0?'red':'green'}"><b>${fmt(left)}</b></td><td>${cell(`arrears|${i}|note`,a.note)}</td><td>${ed?`<button class="btn s d" data-act="del" data-list="arrears" data-i="${i}">삭제</button>`:''}</td></tr>`}).join('');
+  return lockBar()+`<div class="panel"><h2>⑤ 미납 현황 <small>${label(cur)} · 납부액은 ③ 입금에서 그 호실 입금액을 자동으로 더합니다</small></h2>
+  ${ed?`<div class="bar"><button class="btn p" data-act="add" data-list="arrears">+ 미납 세대 추가</button><span class="muted">② 부과를 쓰면 이 목록 대신 호실별 자동 계산으로 바뀝니다.</span></div>`:''}
+  <div class="wrap"><table><thead><tr><th>호실</th><th>입주자</th><th class="n">부과액(누적)</th><th class="n">연체료</th><th class="n">이번 달 입금</th><th class="n">남은 미납</th><th>비고</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="8" class="muted">미납 세대가 없습니다.</td></tr>'}</tbody>
+  <tfoot><tr class="tot"><td colspan="5">합계</td><td class="n red">${fmt(unpaidTotal(cur))}</td><td colspan="2"></td></tr></tfoot></table></div></div>`;
 },
 close(){
-  if(!finActive(cur))return `<div class="panel"><h2>⑤ 월결산</h2><p class="muted">${label(cur)}은 원본 엑셀에 입금·지출 기록이 없어 결산을 계산할 수 없습니다. (검침 기록만 있음)</p></div>`;
-  const o=opening(cur),c=closing(cur),x=P(),m=+cur.slice(5),pm=m===1?12:m-1;
-  const ro=!editable(cur);
-  return lockBar()+`<div class="grid2"><div class="panel"><h2>⑤ ${m}월분 수입 및 지출 총액</h2><table class="calc">
-  <tr><td>${pm}월 통장 이월금 ${o.auto?'<span class="pill info">전월에서 자동</span>':''}</td><td class="n">${cell('opening|0|bank',o.bank,1,ro)}</td></tr>
+  if(!finActive(cur))return `<div class="panel"><h2>⑥ 월결산</h2><p class="muted">${label(cur)}은 입금·지출 기록이 없어 결산을 계산할 수 없습니다. (검침 기록만 있음)</p></div>`;
+  const o=opening(cur),c=closing(cur),x=P(),m=+cur.slice(5),pm=m===1?12:m-1,ro=!editable(cur);
+  const autoTag=o.auto==='closed'?pill('전월 마감값','ok'):o.auto==='live'?pill('전월에서 자동','info'):pill('직접 입력','warn');
+  const closeBtn=canWrite?(x.closed?`<button class="btn d" data-act="reopen">마감 해제</button>`:`<button class="btn p" data-act="closeMonth">이 달 마감</button>`):'';
+  return lockBar()+`<div class="grid2"><div class="panel"><h2>⑥ ${m}월분 수입 및 지출 총액</h2><table class="calc">
+  <tr><td>${pm}월 통장 이월금 ${autoTag}</td><td class="n">${cell('opening|0|bank',o.bank,1,ro)}</td></tr>
   <tr><td>결산 이자</td><td class="n">${cell('opening|0|interest',o.interest,1,ro)}</td></tr>
   <tr><td>+ ${m}월 관리비 입금액</td><td class="n">${fmt(c.pay)}</td></tr>
   <tr><td>− ${m}월 통장 지출금</td><td class="n">${fmt(c.exp)}</td></tr>
@@ -380,45 +565,88 @@ close(){
   <tr><td>− 시재 사용</td><td class="n">${fmt(c.cashUsed)}</td></tr>
   <tr class="tot"><td>= ${m}월 시재 잔액</td><td class="n">${fmt(c.cash)}</td></tr>
   <tr class="tot"><td>${m}월 총 합계금 잔액 (통장+시재)</td><td class="n">${fmt(c.total)}</td></tr></table>
-  <p class="muted">이월금 칸을 직접 고치면 자동값 대신 고친 값이 쓰입니다.</p></div>
-  <div class="panel"><h2>원본 대조</h2>${x.reported?`<table class="calc"><tr><th></th><th class="n">원본 엑셀</th><th class="n">프로그램 계산</th></tr>
-  ${[['통장 잔여금',x.reported.bank,c.bank],['시재 잔액',x.reported.cash,c.cash],['총 합계금',x.reported.total,c.total]].map(t=>`<tr><td>${t[0]}</td><td class="n">${fmt(t[1])}</td><td class="n ${t[1]===t[2]?'green':'red'}">${fmt(t[2])} ${t[1]===t[2]?'✓':'✗'}</td></tr>`).join('')}</table>`:'<p class="muted">비교할 원본 값이 없습니다 (프로그램에서 새로 만든 달).</p>'}</div></div>`;
+  <div class="bar" style="margin-top:12px">${closeBtn}</div>
+  <p class="muted">마감하면 이 달 잔액이 고정되어, 다음 달 이월금이 더 이상 바뀌지 않고 이 달은 수정할 수 없게 됩니다. 실제 통장 잔액과 맞는지 확인한 뒤 마감하세요.</p></div>
+  <div class="panel"><h2>통장 대조</h2>${x.reported?`<table class="calc"><tr><th></th><th class="n">원본 엑셀</th><th class="n">프로그램 계산</th></tr>
+  ${[['통장 잔여금',x.reported.bank,c.bank],['시재 잔액',x.reported.cash,c.cash],['총 합계금',x.reported.total,c.total]].map(t=>`<tr><td>${t[0]}</td><td class="n">${fmt(t[1])}</td><td class="n ${t[1]===t[2]?'green':'red'}">${fmt(t[2])} ${t[1]===t[2]?'✓':'✗'}</td></tr>`).join('')}</table>`:`<p class="muted">마감 전에 은행 앱의 실제 잔액과 위 '통장 잔여금'을 비교해 보세요.</p>`}</div></div>`;
 },
 history(){
-  const ps=periods();
-  const rooms=P(ps[ps.length-1]).meters.map(r=>r.room);
-  const data=ps.map(p=>{const r=meterRows(p).find(z=>z.room===histRoom);const pay=sum(P(p).payments.filter(a=>a.room===histRoom).map(a=>a.amount));return {p,r,pay,fin:hasFin(p)}});
+  const ps=periods(),rooms=P(ps[ps.length-1]).meters.map(r=>r.room);
+  const data=ps.map(p=>{const r=meterRows(p).find(z=>z.room===histRoom);const pay=paidBy(p,histRoom);return {p,r,pay,fin:finActive(p),bill:hasBilling(p)?billing(p).per[histRoom]?.total:null}});
   const vals=data.map(d=>d.r&&d.r.e.u>0&&d.r.e.u<1500?d.r.e.u:0),mx=Math.max(1,...vals),W=Math.max(600,ps.length*16);
-  const svg=`<svg width="100%" viewBox="0 0 ${W} 150" preserveAspectRatio="none" style="height:150px">${vals.map((v,i)=>`<rect x="${i*(W/ps.length)+2}" y="${130-v/mx*120}" width="${W/ps.length-4}" height="${v/mx*120}" fill="#3b78c4"><title>${label(ps[i])} ${fmt(v)}</title></rect>`).join('')}<line x1="0" y1="130" x2="${W}" y2="130" stroke="#ccc"/></svg>`;
-  const tot=ps.map(p=>{const r=meterRows(p);return {p,e:sum(r.map(z=>z.e.u)),w:r.some(z=>z.w.u!==null)?sum(r.map(z=>z.w.u)):null,pay:hasFin(p)?sum(P(p).payments.map(a=>a.amount)):null,exp:hasFin(p)?sum(P(p).expenses.map(a=>a.amount)):null}}).reverse();
+  const svg=`<svg width="100%" viewBox="0 0 ${W} 150" preserveAspectRatio="none" style="height:150px">${vals.map((v,i)=>`<rect x="${i*(W/ps.length)+2}" y="${130-v/mx*120}" width="${W/ps.length-4}" height="${v/mx*120}" fill="var(--bar)"><title>${label(ps[i])} ${fmt(v)}</title></rect>`).join('')}<line x1="0" y1="130" x2="${W}" y2="130" stroke="var(--line)"/></svg>`;
+  const tot=ps.map(p=>{const r=meterRows(p);return {p,e:sum(r.map(z=>z.e.u)),w:r.some(z=>z.w.u!==null)?sum(r.map(z=>z.w.u)):null,pay:finActive(p)?sum(P(p).payments.map(a=>a.amount)):null,exp:finActive(p)?sum(P(p).expenses.map(a=>a.amount)):null}}).reverse();
   return `<div class="panel"><h2>호실별 지난 기록 <select id="histRoom" class="btn">${rooms.map(r=>`<option ${r===histRoom?'selected':''}>${r}</option>`).join('')}</select><small>${label(ps[0])} ~ ${label(ps[ps.length-1])} · 원본 엑셀에 없는 달(2021년, 2022년 1~10월, 2023년 12월~2024년 10월)은 빠져 있습니다</small></h2>
   <div class="muted" style="font-size:12px">전기 사용량 추이 (막대에 마우스를 올리면 값 표시)</div>${svg}
-  <div class="wrap"><table><thead><tr><th>정산월</th><th>입주자</th><th class="n">전월 전기</th><th class="n">당월 전기</th><th class="n">전기 사용량</th><th class="n">수도 사용량</th><th class="n">입금액</th><th></th></tr></thead><tbody>
-  ${data.slice().reverse().map(d=>d.r?`<tr><td>${label(d.p)}</td><td>${esc(d.r.name)}</td><td class="n">${fmt(d.r.ep)}</td><td class="n">${fmt(d.r.ec)}</td><td class="n ${d.r.e.neg||d.r.e.u>1500?'red':''}">${fmt(d.r.e.u)}</td><td class="n">${fmt(d.r.w.u)}</td><td class="n">${d.fin?fmt(d.pay):'<span class="muted">—</span>'}</td><td><button class="btn s np" data-act="goto" data-p="${d.p}">이 달 열기</button></td></tr>`:'').join('')}</tbody></table></div></div>
+  <div class="wrap"><table><thead><tr><th>정산월</th><th>입주자</th><th class="n hide-m">전월 전기</th><th class="n hide-m">당월 전기</th><th class="n">전기 사용량</th><th class="n">수도 사용량</th><th class="n">부과액</th><th class="n">입금액</th><th></th></tr></thead><tbody>
+  ${data.slice().reverse().map(d=>d.r?`<tr><td>${label(d.p)}</td><td>${esc(d.r.name)}</td><td class="n hide-m">${fmt(d.r.ep)}</td><td class="n hide-m">${fmt(d.r.ec)}</td><td class="n ${d.r.e.neg||d.r.e.u>1500?'red':''}">${fmt(d.r.e.u)}</td><td class="n">${fmt(d.r.w.u)}</td><td class="n">${d.bill==null?'<span class="muted">—</span>':fmt(d.bill)}</td><td class="n">${d.fin?fmt(d.pay):'<span class="muted">—</span>'}</td><td><button class="btn s" data-act="goto" data-p="${d.p}">열기</button></td></tr>`:'').join('')}</tbody></table></div></div>
   <div class="panel"><h2>월별 전체 합계</h2><div class="wrap"><table><thead><tr><th>정산월</th><th class="n">전기 사용량</th><th class="n">수도 사용량</th><th class="n">입금 합계</th><th class="n">통장 지출</th><th></th></tr></thead><tbody>
-  ${tot.map(t=>`<tr><td>${label(t.p)}</td><td class="n">${fmt(t.e)}</td><td class="n">${t.w===null?'<span class="muted">—</span>':fmt(t.w)}</td><td class="n">${t.pay===null?'<span class="muted">—</span>':fmt(t.pay)}</td><td class="n">${t.exp===null?'<span class="muted">—</span>':fmt(t.exp)}</td><td><button class="btn s np" data-act="goto" data-p="${t.p}">열기</button></td></tr>`).join('')}</tbody></table></div>
+  ${tot.map(t=>`<tr><td>${label(t.p)}${P(t.p).closed?' '+pill('마감','ok'):''}</td><td class="n">${fmt(t.e)}</td><td class="n">${t.w===null?'<span class="muted">—</span>':fmt(t.w)}</td><td class="n">${t.pay===null?'<span class="muted">—</span>':fmt(t.pay)}</td><td class="n">${t.exp===null?'<span class="muted">—</span>':fmt(t.exp)}</td><td><button class="btn s" data-act="goto" data-p="${t.p}">열기</button></td></tr>`).join('')}</tbody></table></div>
   <p class="muted">2022년 11월분은 원본 시트의 전월 값이 다른 달과 이어지지 않아 사용량이 비정상으로 나옵니다(원본 그대로 표시).</p></div>`;
 },
+logs(){
+  return `<div class="panel"><h2>변경 기록 <small>누가 언제 무엇을 바꿨는지 · 최근 150건 · 각 기록 시점 이전 상태로 되돌릴 수 있습니다</small></h2>
+  <div class="bar"><label class="muted"><input type="checkbox" id="logOnlyCur" ${VIEWS._logCur?'checked':''}> ${label(cur)}만 보기</label></div>
+  <div id="logList"><p class="muted">불러오는 중…</p></div></div>`;
+},
 settings(){
-  return `<div class="panel"><h2>자료 저장 방식</h2><p>입력한 내용은 <b>온라인(구글 Firebase)에 바로 저장</b>되어, 어느 PC·휴대폰에서 로그인해도 같은 자료가 보입니다. 위쪽에 '저장됨'이 보이면 저장이 끝난 것입니다.</p>
-  <p class="muted">만일을 위해 한 달에 한 번 백업 파일을 내려받아 두세요.</p>
+  const lb=APPMETA.lastBackup;
+  return `<div class="panel"><h2>백업</h2><p>입력한 내용은 <b>온라인(구글 Firebase)에 바로 저장</b>되고, 고칠 때마다 이전 상태가 <b>변경 기록</b>에 자동 보관됩니다. 그래도 한 달에 한 번은 백업 파일을 내려받아 두세요.</p>
+  <p class="muted">마지막 백업: ${lb?nowStr(lb):'<span class="red">한 번도 안 함</span>'}</p>
   <div class="bar"><button class="btn p" data-act="backup">백업 파일 내려받기</button>${canWrite?'<button class="btn" data-act="restore">백업 파일로 복원</button>':''}<button class="btn" data-act="exportAll">전체 검침 이력 엑셀</button></div></div>
-  <div class="panel"><h2>이 프로그램에 대해</h2><ul class="muted" style="line-height:1.8"><li>원본: 2026,2027년 통합 관리비 정산 엑셀 — 검침 2020.01~, 2026년 7월분 입금·지출·미납.</li><li>원본의 '2024.10' 시트는 다른 달 값이 섞인 깨진 시트라 제외했고, '2024.07' 시트는 내용상 2025년 7월이라 2025년 7월로 넣었습니다.</li><li>새 달은 '+ 새 달 만들기'로 이번 달까지만, 한 달씩 만들 수 있습니다.</li><li>최근 두 달만 바로 고칠 수 있고, 지난 달은 '이 달 수정하기'를 눌러야 고쳐집니다.</li></ul></div>`;
+  <div class="panel"><h2>계정·관리 정보</h2><table class="calc">
+  <tr><td>사이트 주소</td><td>endbstns620-design.github.io/jeongyeon-web</td></tr>
+  <tr><td>장부 로그인</td><td>pjm0620@naver.com (비밀번호 분실 시 로그인 화면 '비밀번호를 잊었어요')</td></tr>
+  <tr><td>자료 저장소</td><td>Firebase 프로젝트 jeongyeon-settle · 관리 화면은 구글 계정 endbstns620@gmail.com으로 접속</td></tr>
+  <tr><td>사이트 코드</td><td>GitHub endbstns620-design/jeongyeon-web · 바탕화면\\정연지오빌\\jeongyeon-web · GitHub Desktop에서 Commit → Push</td></tr>
+  <tr><td>비용</td><td>0원 (Firebase 무료 요금제 · GitHub Pages)</td></tr></table></div>
+  <div class="panel"><h2>이 프로그램에 대해</h2><ul class="muted" style="line-height:1.8"><li>원본: 2026,2027년 통합 관리비 정산 엑셀 — 검침 2020.01~, 2026년 7월분 입금·지출·미납.</li><li>'2024.10' 시트는 깨진 시트라 제외, '2024.07' 시트는 내용상 2025년 7월이라 2025년 7월로 넣었습니다.</li><li>두 기기에서 같은 달을 동시에 고치면, 늦게 저장한 쪽에 알림이 뜨고 최신 내용으로 다시 불러옵니다.</li></ul></div>`;
 }};
-
+async function loadLogs(){
+  const el=$('#logList');if(!el)return;
+  try{
+    let q=FS.collection('logs').orderBy('atMs','desc').limit(150);
+    const snap=await q.get();let docs=snap.docs.map(d=>({id:d.id,...d.data()}));
+    if(VIEWS._logCur)docs=docs.filter(d=>d.period===cur);
+    if(!$('#logList'))return;
+    $('#logList').innerHTML=docs.length?docs.map(d=>`<div class="log"><div class="h"><b>${label(d.period)}</b><span class="muted">${nowStr(d.atMs)} · ${esc(d.by||'')}</span>${d.versionId&&canWrite?`<button class="btn s" data-act="revert" data-v="${d.versionId}" data-p="${d.period}">이 변경 이전으로 되돌리기</button>`:''}</div><ul>${(d.changes||[]).slice(0,8).map(c=>`<li>${esc(c)}</li>`).join('')}${(d.changes||[]).length>8||d.more?`<li>외 ${((d.changes||[]).length-8>0?(d.changes.length-8):0)+(d.more||0)}건</li>`:''}</ul></div>`).join(''):'<p class="muted">아직 변경 기록이 없습니다. 이 기능을 넣은 뒤부터 기록됩니다.</p>';
+  }catch(e){if($('#logList'))$('#logList').innerHTML=`<p class="red">변경 기록을 불러오지 못했습니다 (${esc(e.code||e.message)}).</p>`}
+}
 /* ---------- 동작 ---------- */
 function nextPeriod(p){let[y,m]=p.split('.').map(Number);m++;if(m>12){m=1;y++}return `${y}.${String(m).padStart(2,'0')}`}
 async function newMonth(){
   if(!canWrite)return;
   const ps=periods(),last=ps[ps.length-1],np=nextPeriod(last),now=new Date(),limit=`${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}`;
   if(np>limit)return tell(`${label(np)}은 아직 오지 않은 달이라 만들 수 없습니다.\n(마지막 달: ${label(last)})`);
-  if(!await ask(`${label(np)}을 새로 만들까요?\n\n· 입주자 이름과 전월 검침값이 이어집니다\n· 통장·시재 잔액은 전월 결산에서 자동으로 이어집니다\n· 남은 미납 세대가 넘어갑니다`,'만들기'))return;
+  if(!await ask(`${label(np)}을 새로 만들까요?\n\n· 입주자 이름과 전월 검침값이 이어집니다\n· 통장·시재 잔액은 전월 결산에서 이어집니다\n· 미납은 자동으로 넘어갑니다`,'만들기'))return;
   const L=P(last),odd=(+np.slice(5))%2===1;
   const lastW={};ps.forEach(p=>P(p).meters.forEach(r=>{if(r.wc!==null&&r.wc!==undefined)lastW[r.room]=r.wc}));
-  S.periods[np]=blank({meters:L.meters.map(r=>({room:r.room,name:r.name,ep:r.ec,ec:null,wp:odd?(lastW[r.room]??null):null,wc:null})),
-    arrears:L.arrears.filter(a=>arrearLeft(a)>0).map(a=>({room:a.room,name:a.name,charge:arrearLeft(a),lateFee:0,paid:0,note:`${label(last)}에서 이월`}))});
-  markDirty(np,null);cur=np;tab='meters';render();toast(`${label(np)}을 만들었습니다`);
+  const arrears=hasBilling(last)?[]:L.arrears.filter(a=>arrearLeft(a,last)>0).map(a=>({room:a.room,name:a.name,charge:arrearLeft(a,last),lateFee:0,note:`${label(last)}에서 이월`}));
+  S.periods[np]=blank({meters:L.meters.map(r=>({room:r.room,name:r.name,ep:r.ec,ec:null,wp:odd?(lastW[r.room]??null):null,wc:null})),arrears,
+    billing:L.billing?{items:(L.billing.items||[]).map(it=>({...it,total:0})),adjust:{},unit:L.billing.unit||10}:null});
+  baseRev[np]=0;markDirty(np,null);cur=np;tab='meters';render();toast(`${label(np)}을 만들었습니다`);
 }
+/* 휴대폰용 한 호실씩 검침 입력 */
+let qi=0;
+function quickOpen(i){
+  const rows=meterRows(cur);qi=Math.max(0,Math.min(i,rows.length-1));const r=rows[qi],odd=rows.some(z=>z.wc!=null)||(+cur.slice(5))%2===1;
+  $('#quick').hidden=false;$('#qPos').textContent=`${label(cur)} · ${qi+1}/${rows.length}`;$('#qRoom').textContent=r.room+'호';$('#qName').textContent=r.name||'';
+  $('#qEp').textContent=`(전월 ${fmt(r.ep)})`;$('#qEc').value=r.ec??'';$('#qWl').hidden=!odd;$('#qWp').textContent=`(이전 ${fmt(r.wp)})`;$('#qWc').value=r.wc??'';
+  const upd=()=>{const e=usage(r.ep,toNum($('#qEc').value)),w=usage(r.wp,toNum($('#qWc').value));$('#qUse').innerHTML=`전기 사용량 <b>${fmt(e.u)}</b>${e.neg?' <span class="red">마이너스!</span>':''}${e.roll?' (한바퀴)':''}${odd?` · 수도 <b>${fmt(w.u)}</b>`:''}`};
+  $('#qEc').oninput=$('#qWc').oninput=upd;upd();setTimeout(()=>$('#qEc').focus(),50);
+}
+function quickSave(){
+  const ec=toNum($('#qEc').value),wc=toNum($('#qWc').value);
+  if(Number.isNaN(ec)||Number.isNaN(wc)){toast('숫자만 입력하세요');return false}
+  const r=P().meters[qi];if((r.ec??null)!==ec||(!$('#qWl').hidden&&(r.wc??null)!==wc))change(cur,x=>{x.meters[qi].ec=ec;if(!$('#qWl').hidden)x.meters[qi].wc=wc});
+  return true;
+}
+$('#qNext').onclick=()=>{if(!quickSave())return;if(qi>=P().meters.length-1){$('#quick').hidden=true;render();toast('마지막 호실까지 입력했습니다');return}quickOpen(qi+1)};
+$('#qPrev').onclick=()=>{if(quickSave())quickOpen(qi-1)};
+$('#qClose').onclick=()=>{quickSave();$('#quick').hidden=true;render()};
+$('#qEc').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();if(!$('#qWl').hidden)$('#qWc').focus();else $('#qNext').click()}};
+$('#qWc').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('#qNext').click()}};
+
 document.addEventListener('click',async e=>{
   const t=e.target.closest('[data-tab],[data-act]');if(!t)return;
   if(t.dataset.tab){tab=t.dataset.tab;render();window.scrollTo(0,0);return}
@@ -427,8 +655,24 @@ document.addEventListener('click',async e=>{
   else if(a==='del'){if(await ask('이 줄을 삭제할까요?','삭제')){change(cur,x=>x[t.dataset.list].splice(+t.dataset.i,1));render();toast('삭제했습니다')}}
   else if(a==='addPay'){change(cur,x=>x.payments.push({room:'',payer:'',date:'',amount:0,note:''}));render()}
   else if(a==='fillPay'){change(cur,x=>x.payments=x.meters.map(r=>({room:r.room,payer:r.name,date:'',amount:0,note:''})));render()}
-  else if(a==='add'){const l=t.dataset.list;change(cur,x=>x[l].push(l==='arrears'?{room:'',name:'',charge:0,lateFee:0,paid:0,note:''}:{date:'',desc:'',amount:0,note:''}));render()}
+  else if(a==='add'){const l=t.dataset.list;change(cur,x=>x[l].push(l==='arrears'?{room:'',name:'',charge:0,lateFee:0,note:''}:{date:'',desc:'',amount:0,note:''}));render()}
+  else if(a==='copyExp'){const q=prevOf(cur);change(cur,x=>x.expenses=P(q).expenses.map(r=>({date:'',desc:r.desc,amount:0,note:''})));render();toast('지난달 지출 항목을 복사했습니다. 금액을 넣어 주세요')}
+  else if(a==='psort'){VIEWS._psort=t.dataset.v;render()}
   else if(a==='goto'){cur=t.dataset.p;tab='summary';render();window.scrollTo(0,0)}
+  else if(a==='quick')quickOpen(P().meters.findIndex(r=>r.ec==null)>=0?P().meters.findIndex(r=>r.ec==null):0);
+  else if(a==='bill-start'){change(cur,x=>x.billing={unit:10,adjust:{},items:[{name:'도급비·대행비',total:0,method:'equal',exclude:''},{name:'공용 전기요금',total:0,method:'equal',exclude:''},{name:'세대 전기요금',total:0,method:'elec',exclude:''},{name:'수도요금',total:0,method:'water',exclude:''}]});render();toast('기본 항목을 넣었습니다. 고지서 금액과 나누는 방식을 맞게 고쳐 주세요')}
+  else if(a==='bill-copy'){const ps=periods().filter(p=>p<cur&&P(p).billing&&(P(p).billing.items||[]).length).pop();if(!ps)return tell('복사할 지난달 부과 항목이 없습니다.');change(cur,x=>x.billing={unit:P(ps).billing.unit||10,adjust:{},items:P(ps).billing.items.map(it=>({...it,total:0}))});render();toast(label(ps)+' 항목을 복사했습니다. 금액을 넣어 주세요')}
+  else if(a==='bill-add'){change(cur,x=>x.billing.items.push({name:'',total:0,method:'equal',exclude:''}));render()}
+  else if(a==='bill-del'){if(await ask('이 부과 항목을 삭제할까요?','삭제')){change(cur,x=>x.billing.items.splice(+t.dataset.i,1));render()}}
+  else if(a==='closeMonth'){const c=closing(cur);if(!await ask(`${label(cur)}을 마감할까요?\n\n통장 잔여금 ${won(c.bank)}\n시재 잔액 ${won(c.cash)}\n총 합계금 ${won(c.total)}\n\n마감하면 이 잔액이 다음 달 이월금으로 고정되고, 이 달은 수정할 수 없습니다.`,'마감'))return;
+    change(cur,x=>x.closed={atMs:Date.now(),by:USER?USER.email:'',bank:c.bank,cash:c.cash,total:c.total});render();toast('마감했습니다')}
+  else if(a==='reopen'){if(!await ask(`${label(cur)} 마감을 해제할까요?\n\n해제하면 이 달을 고칠 수 있고, 고친 내용에 따라 다음 달 이월금이 다시 바뀝니다. 해제 기록은 변경 기록에 남습니다.`,'마감 해제'))return;
+    change(cur,x=>x.closed=null);unlocked[cur]=true;render();toast('마감을 해제했습니다')}
+  else if(a==='revert'){
+    const p=t.dataset.p;if(!await ask(`${label(p)}을 이 변경이 일어나기 직전 상태로 되돌릴까요?\n(지금 상태도 변경 기록에 남으므로 다시 되돌릴 수 있습니다)`,'되돌리기'))return;
+    try{const v=await FS.collection('versions').doc(t.dataset.v).get();if(!v.exists)return tell('보관된 이전 상태를 찾지 못했습니다.');
+      const before=S.periods[p]?clone(S.periods[p]):null;S.periods[p]=blank(v.data().data);markDirty(p,before,{reason:`변경 기록에서 되돌림 (${nowStr(v.data().atMs)} 이전 상태)`});cur=p;tab='summary';render();toast('되돌렸습니다')}
+    catch(err){tell('되돌리지 못했습니다: '+(err.code||err.message))}}
   else if(a==='backup')backup();
   else if(a==='restore')$('#restoreFile').click();
   else if(a==='exportAll')exportAll();
@@ -436,6 +680,7 @@ document.addEventListener('click',async e=>{
 document.addEventListener('change',e=>{
   if(e.target.id==='period'){cur=e.target.value;render()}
   if(e.target.id==='histRoom'){histRoom=e.target.value;render()}
+  if(e.target.id==='logOnlyCur'){VIEWS._logCur=e.target.checked;loadLogs()}
   if(e.target.id==='memo'){const v=e.target.value;change(cur,x=>x.memo=v);toast('메모를 저장했습니다')}
   if(e.target.id==='restoreFile'){const f=e.target.files[0];e.target.value='';if(f)restore(f)}
 });
@@ -443,49 +688,60 @@ $('#newMonth').onclick=newMonth;
 $('#exportX').onclick=exportMonth;
 $('#undo').onclick=async()=>{
   const u=undoStack.pop();if(!u)return toast('이번 접속에서 되돌릴 변경이 없습니다');
+  const before=S.periods[u.p]?clone(S.periods[u.p]):null;
   if(u.doc)S.periods[u.p]=u.doc; else delete S.periods[u.p];
-  pending[u.p]=true;clearTimeout(timers[u.p]);timers[u.p]=setTimeout(()=>flush(u.p),50);render();toast(`${label(u.p)} 변경을 되돌렸습니다`);
+  if(!(u.p in dirtyBase))dirtyBase[u.p]=before;pending[u.p]={reason:'되돌리기'};clearTimeout(timers[u.p]);timers[u.p]=setTimeout(()=>flush(u.p),50);render();toast(`${label(u.p)} 변경을 되돌렸습니다`);
 };
 async function saveFile(filename,data){
   try{const blob=data instanceof Blob?data:new Blob([data]);const u=URL.createObjectURL(blob),el=document.createElement('a');el.href=u;el.download=filename;document.body.appendChild(el);el.click();setTimeout(()=>{el.remove();URL.revokeObjectURL(u)},3000);return true}
   catch(e){tell('파일을 내려받지 못했습니다: '+e.message);return false}
 }
 async function backup(){
-  const ok=await saveFile(`정연관리비_백업_${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({version:2,periods:S.periods,exportedAt:new Date().toISOString()}));
-  if(ok)toast('백업 파일을 내려받았습니다');
+  if(await saveFile(`정연관리비_백업_${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({version:3,periods:S.periods,exportedAt:new Date().toISOString()}))){await saveMeta({lastBackup:Date.now()});render();toast('백업 파일을 내려받았습니다 (다운로드 폴더)')}
 }
 async function restore(f){
   let d;try{d=JSON.parse(await f.text());if(!d.periods||typeof d.periods!=='object')throw 0}catch(_){return tell('올바른 백업 파일이 아닙니다.')}
   const ids=Object.keys(d.periods).filter(k=>/^\d{4}\.\d{2}$/.test(k));
   if(!ids.length)return tell('백업 파일에 정산월 자료가 없습니다.');
-  if(!await ask(`백업 파일의 ${ids.length}개월 자료로 현재 자료를 바꿀까요?\n(백업에 없는 달은 그대로 둡니다)`,'복원'))return;
-  setSync('복원 중…');
-  for(const id of ids){S.periods[id]=blank(d.periods[id]);try{await FS.collection('periods').doc(id).set(clone(S.periods[id]))}catch(e){return tell('복원 중 저장에 실패했습니다: '+(e.message||e.code))}}
-  setSync('저장됨');render();toast('복원했습니다');
+  if(!await ask(`백업 파일의 ${ids.length}개월 자료로 현재 자료를 바꿀까요?\n(백업에 없는 달은 그대로 둡니다. 바뀌기 전 상태는 변경 기록에 보관됩니다)`,'복원'))return;
+  for(const id of ids){const before=S.periods[id]?clone(S.periods[id]):null;S.periods[id]=blank(d.periods[id]);if(!(id in dirtyBase))dirtyBase[id]=before;pending[id]={force:true,reason:'백업 파일에서 복원'};await flush(id)}
+  render();toast('복원했습니다');
 }
+/* ---------- 엑셀 (원본 양식에 가깝게) ---------- */
 function needX(){if(typeof XLSX==='undefined'){tell('엑셀 기능을 불러오지 못했습니다. 인터넷 연결을 확인하고 새로 고침해 주세요.');return false}return true}
-function wbBytes(wb){return new Uint8Array(XLSX.write(wb,{type:'array',bookType:'xlsx'}))}
-function ws(rows,widths){const s=XLSX.utils.aoa_to_sheet(rows);s['!cols']=widths.map(w=>({wch:w}));return s}
-async function exportMonth(){
+function ws(rows,widths,merges){const s=XLSX.utils.aoa_to_sheet(rows);s['!cols']=widths.map(w=>({wch:w}));if(merges)s['!merges']=merges;return s}
+const M=(r1,c1,r2,c2)=>({s:{r:r1,c:c1},e:{r:r2,c:c2}});
+function exportMonth(){
   if(!cur||!needX())return;
-  const x=P(),wb=XLSX.utils.book_new(),m=+cur.slice(5),mr=meterRows(cur);
-  XLSX.utils.book_append_sheet(wb,ws([[`정연지오빌1차 전기·수도 검침량 (${label(cur)})`],[],['호수','성명','전월 전기','당월 전기','전기 사용량','이전 수도','당월 수도','수도 사용량'],...mr.map(r=>[+r.room,r.name,r.ep,r.ec,r.e.u,r.wp,r.wc,r.w.u]),['합계','',sum(mr.map(r=>r.ep)),sum(mr.map(r=>r.ec)),sum(mr.map(r=>r.e.u)),sum(mr.map(r=>r.wp)),sum(mr.map(r=>r.wc)),sum(mr.map(r=>r.w.u))]],[8,12,11,11,11,11,11,11]),'검침');
+  const x=P(),wb=XLSX.utils.book_new(),y=cur.slice(0,4),m=+cur.slice(5),pm=m===1?12:m-1,mr=meterRows(cur);
+  // 검침 (원본: 분류/전기/수도, 층별 소계, 합계)
+  const s1=[['정연지오빌1차   전기,수도 검침량'],[`${y}년 ${m}월분`],['분류','','전기','','','수도'],['호수','성명',`${pm}월분`,`${m}월분`,'사용량','이전','당월','사용량']];
+  for(const f of ROOMS_FLOORS){const fr=mr.filter(r=>r.room[0]==String(f));fr.forEach(r=>s1.push([+r.room,r.name,r.ep,r.ec,r.e.u,r.wp,r.wc,r.w.u]));s1.push(['소계','',sum(fr.map(r=>r.ep)),sum(fr.map(r=>r.ec)),sum(fr.map(r=>r.e.u)),sum(fr.map(r=>r.wp)),sum(fr.map(r=>r.wc)),sum(fr.map(r=>r.w.u))])}
+  s1.push(['합계','',sum(mr.map(r=>r.ep)),sum(mr.map(r=>r.ec)),sum(mr.map(r=>r.e.u)),sum(mr.map(r=>r.wp)),sum(mr.map(r=>r.wc)),sum(mr.map(r=>r.w.u))]);
+  XLSX.utils.book_append_sheet(wb,ws(s1,[8,12,10,10,10,10,10,10],[M(0,0,0,7),M(2,2,2,4),M(2,5,2,7)]),`${y}.${String(m).padStart(2,'0')}`);
+  if(hasBilling(cur)){const B=billing(cur),its=x.billing.items;
+    const s=[[`[정연지오빌1 ${m}월분 관리비 부과내역]`],[],['호실','성명',...its.map(i=>i.name),'개별 조정','부과액'],...roomsOf(cur).map(r=>[+r,(x.meters.find(z=>z.room===r)||{}).name,...B.per[r].items,B.per[r].adjust,B.per[r].total]),['합계','',...B.itemRes.map(i=>i.alloc),sum(Object.values(x.billing.adjust||{})),B.sum],[],['항목','고지서 총액','나누는 방식','제외 호실'],...its.map(i=>[i.name,i.total,METHODS[i.method],i.exclude||''])];
+    XLSX.utils.book_append_sheet(wb,ws(s,[8,12,...its.map(()=>12),10,12]),'부과내역')}
   if(finActive(cur)){
-    XLSX.utils.book_append_sheet(wb,ws([[`<정연 지오빌1 ${cur.slice(0,4)}년${m}월분 관리비 입금 내역서>`],[],['호실','성명','입금일','입금액','비고'],...x.payments.map(a=>[+a.room||a.room,a.payer,a.date,a.amount,a.note]),['','합계','',sum(x.payments.map(a=>a.amount)),'']],[8,12,12,12,24]),'입금내역');
-    XLSX.utils.book_append_sheet(wb,ws([[`【 ${cur.slice(0,4)}년도 (${m}월 달) 공과금 지출 내역서 】`],[],['일자','지출 내용','지출 금액','비고'],...x.expenses.map(a=>[a.date,a.desc,a.amount,a.note]),['지출 총액','',sum(x.expenses.map(a=>a.amount)),''],[],['【 전도금 (시재) 지출 내역 】'],['일자','지출 내용','지출 금액','비고'],...x.cash.map(a=>[a.date,a.desc,a.amount,a.note]),['시재 지출 합계','',sum(x.cash.map(a=>a.amount)),'']],[12,26,14,30]),'지출내역');
-    XLSX.utils.book_append_sheet(wb,ws([[`[정연지오빌1 ${m}월분 관리비 미납현황]`],[],['호수','입주자 이름','부과액','연체료','납부액','남은 미납','비고'],...x.arrears.map(a=>[+a.room||a.room,a.name,a.charge,a.lateFee,a.paid,arrearLeft(a),a.note]),['합계','','','','',sum(x.arrears.map(arrearLeft)),'']],[8,12,12,10,12,12,24]),'미납현황');
-    const o=opening(cur),c=closing(cur);
-    if(o)XLSX.utils.book_append_sheet(wb,ws([[`【 ${m}월달 수입 및 지출금 총액 】`],[],['통장 이월금',o.bank],['결산 이자',o.interest||0],['관리비 입금액',c.pay],['통장 지출금',c.exp],['통장 잔여금',c.bank],['시재 이월금',o.cash],['시재 사용',c.cashUsed],['시재 잔액',c.cash],['총 합계금 잔액',c.total]],[20,16]),'월결산');
+    const pays=x.payments.slice().sort((a,b)=>(+a.room||0)-(+b.room||0));
+    XLSX.utils.book_append_sheet(wb,ws([[`<정연 지오빌1 ${y}년${m}월분 관리비 입금 내역서>`],['호    실','성    명','입 금 일','입 금 액','비    고'],...pays.map(a=>[a.room,a.payer,a.date,a.amount,a.note]),['','','합    계',sum(x.payments.map(a=>a.amount)),'']],[8,12,12,12,24],[M(0,0,0,4)]),'관리비 입금내역');
+    const o=opening(cur),c=closing(cur),mm=String(m).padStart(2,'0'),pmm=String(pm).padStart(2,'0');
+    const s3=[[`【 ${y}년도 (${mm}월 달 )  공과금 지출 내역서 】`],['일    자','','지  출  내  용','지  출  금  액','비    고'],...x.expenses.map(a=>[a.date,'',a.desc,a.amount,a.note]),['지 출 총 액','','',c.exp,''],[],['【 전도금 (시재) 지출 내역 】'],['일    자','','지  출  내  용','지  출  금  액','비    고'],[`${pmm} 월달 이월금`,'','',o.cash,''],...x.cash.map(a=>[a.date,'',a.desc,a.amount,a.note]),['지출금액','',c.cashUsed,'지출잔액',c.cash],[],[`【 ${mm}월달 수입 및 지출금 총액 】`],[`   ${pmm} 월달 통장 이월금`,'','',o.bank,''],[`   ${mm}월달 결산 이자`,'','',o.interest||0,''],[`   ${mm} 월 관리비 입금액`,'','',c.pay,''],[`   ${mm} 월 통장 지출금`,'','',c.exp,''],[`   ${mm} 월 시재금 사용 잔액`,'','',c.cash,''],[`   ${mm} 월 통장 잔여금`,'','',c.bank,''],[`${mm}월달 총 합계금 잔액`,'','',c.total,'']];
+    XLSX.utils.book_append_sheet(wb,ws(s3,[16,2,24,14,30],[M(0,0,0,4)]),'지출내역');
+    let s4;
+    if(hasBilling(cur)){const L=ledger(cur);s4=[[`[정연지오빌1 ${mm}월분 관리비 미납현황]`],['호수','입주자 이름','전월 잔액','당월 부과액','당월 입금','미납(과오납) 잔액'],...roomsOf(cur).filter(r=>L.rows[r].end!==0).map(r=>[+r,(x.meters.find(z=>z.room===r)||{}).name,L.rows[r].carry,L.rows[r].bill,L.rows[r].paid,L.rows[r].end]),['합 계','','','','',unpaidTotal(cur)]]}
+    else s4=[[`[정연지오빌1 ${mm}월분 관리비 미납현황]`],['호수','입주자 이름','당월 부과액','연체료','이번 달 입금','납기후 금액','비       고'],...x.arrears.map(a=>[+a.room||a.room,a.name,a.charge,a.lateFee,arrearPaid(cur,a),arrearLeft(a,cur),a.note]),['합 계','','','','',unpaidTotal(cur),'']];
+    XLSX.utils.book_append_sheet(wb,ws(s4,[8,12,12,12,12,14,24],[M(0,0,0,5)]),'미납현황');
   }
-  if(await saveFile(`정연지오빌1_관리비_${cur}.xlsx`,wbBytes(wb)))toast('엑셀 파일을 내려받았습니다');
+  XLSX.writeFile(wb,`정연지오빌1_관리비_${cur}.xlsx`);toast('엑셀 파일을 내려받았습니다 (다운로드 폴더)');
 }
-async function exportAll(){
+function exportAll(){
   if(!needX())return;
   const ps=periods(),wb=XLSX.utils.book_new(),rooms=P(ps[ps.length-1]).meters.map(r=>r.room),head=['정산월',...rooms.map(r=>r+'호')];
   const E=[head,...ps.map(p=>{const m=meterRows(p);return [label(p),...rooms.map(r=>{const z=m.find(q=>q.room===r);return z?z.e.u:null})]})];
   const Wt=[head,...ps.map(p=>{const m=meterRows(p);if(!m.some(z=>z.w.u!==null))return null;return [label(p),...rooms.map(r=>{const z=m.find(q=>q.room===r);return z?z.w.u:null})]}).filter(Boolean)];
   XLSX.utils.book_append_sheet(wb,ws(E,[14]),'전기 사용량');XLSX.utils.book_append_sheet(wb,ws(Wt,[14]),'수도 사용량');
-  if(await saveFile(`정연지오빌1_검침이력_${ps[0]}-${ps[ps.length-1]}.xlsx`,wbBytes(wb)))toast('엑셀 파일을 내려받았습니다');
+  XLSX.writeFile(wb,`정연지오빌1_검침이력_${ps[0]}-${ps[ps.length-1]}.xlsx`);toast('엑셀 파일을 내려받았습니다');
 }
 boot();
 </script>
