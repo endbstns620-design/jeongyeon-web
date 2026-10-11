@@ -190,6 +190,7 @@ function normDate(s){
 const dateKey=s=>{const m=String(s||'').match(/(\d{1,2})\D+(\d{1,2})/);return m?(+m[1])*100+(+m[2]):9999};
 
 /* ---------- 변경 내용 요약 ---------- */
+const SIJAE='시재금';
 const LISTN={payments:'입금',expenses:'통장 지출',cash:'시재 지출',arrears:'미납'};
 const FIELDN={room:'호실',payer:'입금자',date:'날짜',amount:'금액',note:'비고',desc:'내용',name:'이름',charge:'부과액',lateFee:'연체료',ep:'전월 전기',ec:'당월 전기',wp:'이전 수도',wc:'당월 수도',bank:'통장 이월금',interest:'이자',cash:'시재 이월금',total:'총액',method:'배분방식',exclude:'제외 호실'};
 const sv=v=>v===null||v===undefined||v===''?'(빈칸)':typeof v==='number'?fmt(v):String(v);
@@ -398,9 +399,9 @@ function checks(p){
   if(spikes.length)out.push(['warn',`전기를 평소보다 훨씬 많이 쓴 집: ${spikes.map(r=>`${r.room}호(${fmt(r.e.u)})`).join(', ')} — 숫자를 잘못 넣지 않았는지 확인하세요.`]);
   if(finActive(p)){
     const rs=new Set(roomsOf(p));
-    const bad=x.payments.filter(a=>a.amount&&!rs.has(String(a.room)));
+    const bad=x.payments.filter(a=>a.amount&&a.room!==SIJAE&&!rs.has(String(a.room)));
     if(bad.length)out.push(['err',`호수가 잘못 적힌 입금 ${bad.length}건: ${bad.map(a=>a.room||'(빈칸)').join(', ')}`]);
-    const seen={},dup=[];x.payments.forEach(a=>{const k=a.room+'|'+a.date+'|'+a.amount;if(a.amount&&seen[k])dup.push(a.room+'호');seen[k]=1});
+    const seen={},dup=[];x.payments.forEach(a=>{if(a.room===SIJAE)return;const k=a.room+'|'+a.date+'|'+a.amount;if(a.amount&&seen[k])dup.push(a.room+'호');seen[k]=1});
     if(dup.length)out.push(['warn',`같은 입금이 두 번 들어간 것 같은 집: ${dup.join(', ')} — 확인하세요.`]);
     const paid=new Set(x.payments.filter(a=>a.amount>0).map(a=>String(a.room)));
     const none=roomsOf(p).filter(r=>!paid.has(r));
@@ -524,11 +525,11 @@ meters(){
 payments(){
   const x=P(),ed=editable(cur),names=Object.fromEntries(x.meters.map(r=>[r.room,r.name]));
   const order=x.payments.map((a,i)=>i).sort((i,j)=>(+x.payments[i].room||0)-(+x.payments[j].room||0)||dateKey(x.payments[i].date)-dateKey(x.payments[j].date));
-  const items=order.map(i=>{const a=x.payments[i];return `<button class="item ${ed?'':'static'}" ${ed?`data-act="pay" data-i="${i}"`:''}><span class="r">${esc(a.room)}</span><span class="mid">${esc(a.payer||names[a.room]||'')}<small>${esc(a.date||'날짜 없음')}${a.note?' · '+esc(a.note):''}</small></span><span class="amt">${won(a.amount)}</span></button>`}).join('');
+  const items=order.map(i=>{const a=x.payments[i];return `<button class="item ${ed?'':'static'}" ${ed?`data-act="${a.room===SIJAE?'sijae':'pay'}" data-i="${i}"`:''}><span class="r" ${a.room===SIJAE?'style="font-size:.8em"':''}>${esc(a.room===SIJAE?'시재':a.room)}</span><span class="mid">${esc(a.payer||names[a.room]||'')}<small>${esc(a.date||'날짜 없음')}${a.note?' · '+esc(a.note):''}</small></span><span class="amt">${won(a.amount)}</span></button>`}).join('');
   const paidRooms=new Set(x.payments.filter(a=>a.amount>0).map(a=>String(a.room)));
   const notYet=roomsOf(cur).filter(r=>!paidRooms.has(r));
   return lockBar()+`<h2 class="title">② 들어온 관리비</h2><p class="lead">통장에 관리비가 들어오면 <b>한 건씩</b> 넣으세요. 한 집이 두 번 나눠 내도 두 번 넣으면 됩니다.</p>
-  ${ed?`<button class="btn p full" data-act="pay" data-i="-1" style="margin-bottom:14px">＋ 들어온 돈 넣기</button>`:''}
+  ${ed?`<button class="btn p full" data-act="pay" data-i="-1" style="margin-bottom:14px">＋ 들어온 돈 넣기</button><button class="btn full" data-act="sijae" data-i="-1" style="margin-bottom:14px">＋ 시재금 돈 넣기</button>`:''}
   <div class="list">${items||'<p class="muted">아직 넣은 입금이 없습니다.</p>'}</div>
   <div class="sumline"><span>들어온 돈 합계 (${x.payments.length}건)</span><span class="green">${won(sum(x.payments.map(a=>a.amount)))}</span></div>
   ${x.payments.length&&notYet.length?`<div class="panel" style="margin-top:12px"><h3>아직 입금이 없는 집 (${notYet.length}집)</h3><p style="margin:0;font-size:1.1rem">${notYet.map(r=>`<b>${r}</b>`).join(' · ')}</p></div>`:''}`;
@@ -700,6 +701,18 @@ function paySheet(i){
       change(cur,x=>{if(i>=0)x.payments[i]=rec;else x.payments.push(rec)})},
     done:i>=0?'고쳤습니다':'넣었습니다',del:i>=0?()=>change(cur,x=>x.payments.splice(i,1)):null});
 }
+function sijaeSheet(i){
+  const x=P(),a=i>=0?x.payments[i]:{date:todayStr(),amount:null,note:''};
+  openSheet({title:i>=0?'시재금 고치기':'시재금 넣기',fields:[
+    {k:'amount',label:'들어온 금액 (원)',type:'num',v:a.amount},
+    {k:'date',label:'들어온 날짜',type:'date',v:a.date,ph:'예: 8/26',chips:['오늘']},
+    {k:'note',label:'메모',type:'text',v:a.note,opt:1}],
+    hint:v=>v.amount?`금액: <b>${korMoney(v.amount)}</b><br>저장하면 <b>들어온 관리비</b>에 합쳐집니다.`:'',
+    save:v=>{if(!v.amount){toast('금액을 넣어 주세요');$('#s_amount').focus();return false}
+      const rec={room:SIJAE,payer:'시재금',date:v.date==='오늘'?todayStr():v.date,amount:v.amount,note:v.note||''};
+      change(cur,x=>{if(i>=0)x.payments[i]=rec;else x.payments.push(rec)})},
+    done:i>=0?'고쳤습니다':'넣었습니다',del:i>=0?()=>change(cur,x=>x.payments.splice(i,1)):null});
+}
 function expSheet(l,i){
   const x=P(),a=i>=0?x[l][i]:{date:todayStr(),desc:'',amount:null,note:''};
   const seen=[];periods().slice(-6).forEach(p=>P(p)[l].forEach(e=>{const d=(e.desc||'').trim();if(d&&!seen.includes(d))seen.push(d)}));
@@ -832,6 +845,7 @@ document.addEventListener('click',async e=>{
   if(a==='unlock'){unlocked[cur]=true;render()}
   else if(a==='meter')meterSheet(+t.dataset.i);
   else if(a==='pay')paySheet(+t.dataset.i);
+  else if(a==='sijae')sijaeSheet(+t.dataset.i);
   else if(a==='exp')expSheet(t.dataset.l,+t.dataset.i);
   else if(a==='arr')arrSheet(+t.dataset.i);
   else if(a==='editOpening')openingSheet();
